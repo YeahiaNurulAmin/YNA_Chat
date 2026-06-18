@@ -2,32 +2,41 @@ import "dotenv/config";
 import dns from "dns";
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
+import { connectDB } from "./lib/db.js";
+import { clerkMiddleware } from '@clerk/express'
 
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
+// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || "" //Needs to change
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-app.use(cors());
+
+// Set up DNS servers for MongoDB connection
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+// Middleware
+// Set up CORS and JSON middleware
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true,
+}));
+// Set up JSON middleware
 app.use(express.json());
+// Set up Clerk middleware
+app.use(clerkMiddleware())
+
 
 
 app.get("/", (req, res) => {
   res.json({ message: "YNA Chat API is running at port " + PORT });
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "YNA Chat API is running at port " + PORT , ok: true});
+});
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`MongoDB connected and Server running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
-  });
-
-console.log("MONGODB_URI = ", process.env.MONGODB_URI);
+// Start the server
+app.listen(PORT, () => {
+    connectDB();
+    console.log(`Server running on port ${PORT}`);
+});
