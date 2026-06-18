@@ -3,6 +3,7 @@ import dns from "dns";
 import express from "express";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
+import { startCronJobs } from "./lib/cron.js";
 import { clerkMiddleware } from '@clerk/express'
 import fs from "fs";
 import path from "path";
@@ -47,5 +48,6 @@ if (fs.existsSync(PUBLIC_DIR)) {
 // Start the server
 app.listen(PORT, () => {
     connectDB();
+    startCronJobs(PORT);
     console.log(`Server running on port ${PORT}`);
 });
