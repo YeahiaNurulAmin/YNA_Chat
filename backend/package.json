@@ -4,7 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "build": "rm -rf dist && cp -R src dist",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
