@@ -20,6 +20,8 @@ const PUBLIC_DIR = path.join(process.cwd(), "public");// This is the directory w
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 // Middleware
+// Set up Clerk webhook middleware
+app.use("/api/webhooks/clerk", express.raw({type: "application/json"}), clerkWebhookMiddleware()); // express.raw is keeps the body raw and not parsed
 // Set up CORS and JSON middleware
 app.use(cors({
   origin: FRONTEND_URL,
