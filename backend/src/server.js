@@ -40,6 +40,8 @@ app.get("/health", (req, res) => {
   res.status(200).json({ message: "YNA Chat API is running at port " + PORT , ok: true});
 });
 
+// Auth routes
+app.get("/api/auth", checkAuth);
 
 if (fs.existsSync(PUBLIC_DIR)) {
   app.use(express.static(PUBLIC_DIR));// Serve static files from the public directory
