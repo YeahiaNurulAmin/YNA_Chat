@@ -48,6 +48,9 @@ if (fs.existsSync(PUBLIC_DIR)) {
 // Start the server
 app.listen(PORT, () => {
     connectDB();
-    startCronJobs(PORT);
+
+    if(process.env.NODE_ENV === "production") {
+      startCronJobs(PORT);
+    }
     console.log(`Server running on port ${PORT}`);
 });
