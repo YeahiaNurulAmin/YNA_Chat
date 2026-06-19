@@ -1,0 +1,1 @@
+import { clerkMiddleware } from '@clerk/express'
