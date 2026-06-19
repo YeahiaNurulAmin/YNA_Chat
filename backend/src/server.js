@@ -7,6 +7,7 @@ import { startCronJobs } from "./lib/cron.js";
 import { clerkMiddleware } from '@clerk/express'
 import fs from "fs";
 import path from "path";
+// import { clerkWebhookMiddleware } from "./webhooks/clerkWebhook.js";
 
 
 // Initialize Express app
@@ -21,7 +22,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 // Middleware
 // Set up Clerk webhook middleware
-app.use("/api/webhooks/clerk", express.raw({type: "application/json"}), clerkWebhookMiddleware()); // express.raw is keeps the body raw and not parsed
+// app.use("/api/webhooks/clerk", express.raw({type: "application/json"}), clerkWebhookMiddleware()); // express.raw is keeps the body raw and not parsed
 // Set up CORS and JSON middleware
 app.use(cors({
   origin: FRONTEND_URL,
