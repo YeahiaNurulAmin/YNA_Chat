@@ -8,6 +8,7 @@ import { clerkMiddleware } from '@clerk/express'
 import fs from "fs";
 import path from "path";
 import clerkWebhookRouter from "./webhooks/clerkWebhookMiddleware.js";
+import authRouter from "./routes/authRoute.js";
 
 
 // Initialize Express app
@@ -41,8 +42,7 @@ app.get("/health", (req, res) => {
 });
 
 // Auth routes
-app.get("/api/auth", checkAuth);
-
+app.use("/api/auth", authRouter);
 if (fs.existsSync(PUBLIC_DIR)) {
   app.use(express.static(PUBLIC_DIR));// Serve static files from the public directory
   app.get("/{*any}", (req, res) => { // Serve the index.html file for all routes
