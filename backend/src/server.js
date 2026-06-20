@@ -10,10 +10,10 @@ import path from "path";
 import clerkWebhookRouter from "./webhooks/clerkWebhookMiddleware.js";
 import authRouter from "./routes/authRoute.js";
 import messageRoute from "./routes/messageRoute.js";
+import { app, server, io, getReceiverSocketId } from "./lib/socket.js";
 
 
 // Initialize Express app
-const app = express();
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const PUBLIC_DIR = path.join(process.cwd(), "public");// This is the directory where the static files are stored
@@ -55,11 +55,12 @@ if (fs.existsSync(PUBLIC_DIR)) {
 }
 
 // Start the server
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    if (process.env.NODE_ENV === "production") {
-      startCronJobs(PORT);
-    }
-    console.log(`Server running on port ${PORT}`);
-  });
+server.listen(PORT, () => {
+  connectDB();
+
+  if (process.env.NODE_ENV === "production") {
+    startCronJobs(PORT);
+  }
+
+  console.log("Server is up and running on PORT:", PORT);
 });
