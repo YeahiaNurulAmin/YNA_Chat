@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import clerkWebhookRouter from "./webhooks/clerkWebhookMiddleware.js";
 import authRouter from "./routes/authRoute.js";
+import messageRoute from "./routes/messageRoute.js";
 
 
 // Initialize Express app
@@ -43,6 +44,9 @@ app.get("/health", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRouter);
+app.use("api/messages", messageRoute);
+
+
 if (fs.existsSync(PUBLIC_DIR)) {
   app.use(express.static(PUBLIC_DIR));// Serve static files from the public directory
   app.get("/{*any}", (req, res) => { // Serve the index.html file for all routes
