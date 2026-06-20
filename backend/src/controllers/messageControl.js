@@ -109,7 +109,7 @@ export async function sendMessage(req, res) {
     await newMessage.save();
 
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
+    const receiverSocketId = getReceiverSocketId(receiverId);// get the receiver's socket id
     // Only send the message to the receiver if they are online
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);

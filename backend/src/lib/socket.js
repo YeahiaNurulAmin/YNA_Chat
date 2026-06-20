@@ -17,16 +17,16 @@ const io = new Server(server, {
     },
 });
 
-const userSocketMap = {};// this is a map of user id to socket id
+const userSocketMap = {};// This is a map of user id to socket id this how it looks like { userId: socketId } = { "666666666666666666666666": "1234567890" }
 
-io.on("connection", (socket) => {
+io.on("connection", (socket) => { // from where getting this socket? from the client side when the client connects to the server
     const userId = socket.handshake.query.userId;
 
     if (userId) {
         userSocketMap[userId] = socket.id;
     }
 
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));// emit the online users to all connected clients(all users)
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));// waht emit does? it emits the online users to all connected clients(all users) by giving it users ids array
 
     io.on("disconnect", () => {
         delete userSocketMap[userId];// delete the user from the map

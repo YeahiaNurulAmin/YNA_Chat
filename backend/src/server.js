@@ -10,7 +10,7 @@ import path from "path";
 import clerkWebhookRouter from "./webhooks/clerkWebhookMiddleware.js";
 import authRouter from "./routes/authRoute.js";
 import messageRoute from "./routes/messageRoute.js";
-import { app, server, io, getReceiverSocketId } from "./lib/socket.js";
+import { app, server, } from "./lib/socket.js";
 
 
 // Initialize Express app
