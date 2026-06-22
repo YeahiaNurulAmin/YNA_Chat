@@ -1,17 +1,9 @@
 import { withTransform } from "../../lib/imagekit";
 import { MessageVideo } from "./MessageVideo";
 import { MessageVoice } from "./MessageVoice";
+import { MessageDocument } from "./MessageDocument";
 
 const IMAGE_TRANSFORM = "q-auto,w-640,f-auto";
-
-function getFileName(url) {
-  try {
-    const pathname = new URL(url).pathname;
-    return decodeURIComponent(pathname.split("/").pop() || "Document");
-  } catch {
-    return "Document";
-  }
-}
 
 export function MessageBubble({ message }) {
   const isOwnMessage = message.role === "me";
@@ -54,17 +46,7 @@ export function MessageBubble({ message }) {
         ))}
 
         {documentUrls.map((url) => (
-          <a
-            key={url}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`mb-1.5 block truncate text-sm underline ${
-              isOwnMessage ? "text-accent-foreground" : "text-accent"
-            }`}
-          >
-            {getFileName(url)}
-          </a>
+          <MessageDocument key={url} url={url} isOwnMessage={isOwnMessage} />
         ))}
 
         {message.text ? (

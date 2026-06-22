@@ -47,3 +47,49 @@ export function validateMediaFiles(files) {
 
   return { ok: true };
 }
+
+export function getFileNameFromUrl(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    return decodeURIComponent(pathname.split("/").pop() || "Document");
+  } catch {
+    return "Document";
+  }
+}
+
+/** Strip ImageKit upload prefixes/hashes for a readable name in the UI. */
+export function getDisplayFileName(url) {
+  const raw = getFileNameFromUrl(url);
+  const withoutPrefix = raw.replace(/^chat-\d+-/i, "");
+  const lastDot = withoutPrefix.lastIndexOf(".");
+
+  if (lastDot === -1) {
+    return withoutPrefix.replace(/_[A-Za-z0-9]+$/, "") || "Document";
+  }
+
+  const extension = withoutPrefix.slice(lastDot);
+  const baseName = withoutPrefix.slice(0, lastDot).replace(/_[A-Za-z0-9]+$/, "");
+  return `${baseName || "Document"}${extension}`;
+}
+
+export function getFileExtension(url) {
+  const name = getFileNameFromUrl(url);
+  const match = name.match(/\.([^.]+)$/);
+  return match ? match[1].toLowerCase() : "";
+}
+
+export function getFileTypeLabel(extension) {
+  const labels = {
+    pdf: "PDF Document",
+    doc: "Word Document",
+    docx: "Word Document",
+    xls: "Excel Spreadsheet",
+    xlsx: "Excel Spreadsheet",
+    ppt: "PowerPoint",
+    pptx: "PowerPoint",
+    txt: "Plain Text",
+    rtf: "Rich Text",
+  };
+
+  return labels[extension] || "Document";
+}
