@@ -172,7 +172,7 @@ export const useChatStore = create(
       },
     }),
     {
-      name: "imessage-storage",
+      name: "ynachat-storage",
       partialize: (state) => ({ isSoundEnabled: state.isSoundEnabled }),
     },
   ),
