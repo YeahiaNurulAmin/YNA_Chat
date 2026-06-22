@@ -44,7 +44,7 @@ app.get("/health", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRouter);
-app.use("api/messages", messageRoute);
+app.use("/api/messages", messageRoute);
 
 
 if (fs.existsSync(PUBLIC_DIR)) {

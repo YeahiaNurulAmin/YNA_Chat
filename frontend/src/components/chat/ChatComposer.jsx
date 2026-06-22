@@ -2,6 +2,7 @@ import { Button, TextArea } from "@heroui/react";
 import { ImageIcon, LoaderIcon, SendHorizontalIcon } from "lucide-react";
 import { useRef } from "react";
 import useKeyboardSound from "../../hooks/useKeyboardSound";
+import { MEDIA_ACCEPT } from "../../lib/media";
 import { useChatStore } from "../../store/useChatStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
@@ -31,13 +32,13 @@ export function ChatComposer() {
   };
 
   const handleMediaPick = async (event) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
     event.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
     const didSendMessage = await sendMediaMessage({
       conversationId: activeConversationId,
-      file,
+      files,
     });
 
     if (didSendMessage) playSoundIfEnabled();
@@ -59,7 +60,8 @@ export function ChatComposer() {
         <input
           ref={mediaInputRef}
           type="file"
-          accept="image/*,video/*"
+          accept={MEDIA_ACCEPT}
+          multiple
           className="sr-only"
           disabled={isSendingMedia}
           tabIndex={-1}

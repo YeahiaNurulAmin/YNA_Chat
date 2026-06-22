@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { axiosInstance } from "../lib/axios";
+import { validateMediaFiles } from "../lib/media";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 
@@ -34,6 +35,7 @@ export const useChatStore = create(
                 : null,
           }));
         } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to load users");
           console.log("Error in get Users", error.message);
         } finally {
           set({ isUsersLoading: false });
@@ -46,6 +48,7 @@ export const useChatStore = create(
           const res = await axiosInstance.get("/messages/conversations");
           set({ conversations: res.data });
         } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to load conversations");
           console.log("Error in getConversations", error.message);
         } finally {
           set({ isConversationsLoading: false });
@@ -127,11 +130,19 @@ export const useChatStore = create(
         return get().sendMessage({ text: messageText });
       },
 
-      sendMediaMessage: async ({ conversationId, file }) => {
-        if (!conversationId || !file) return false;
+      sendMediaMessage: async ({ conversationId, files }) => {
+        if (!conversationId || !files?.length) return false;
+
+        const validation = validateMediaFiles(files);
+        if (!validation.ok) {
+          toast.error(validation.message);
+          return false;
+        }
 
         const formData = new FormData();
-        formData.append("media", file);
+        for (const file of files) {
+          formData.append("media", file);
+        }
 
         set({ isSendingMedia: true });
         try {

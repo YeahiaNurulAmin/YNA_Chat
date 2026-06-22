@@ -1,6 +1,7 @@
 import express from "express";
 import User from "../models/User.js";
 import { verifyWebhook } from "@clerk/express/webhooks";
+import { upsertUserFromPayload } from "../lib/syncClerkUser.js";
 
 const router = express.Router();
 
@@ -34,16 +35,14 @@ router.post("/", async (req, res) => {
         u.username ||
         email.split("@")[0];
 
-      await User.findOneAndUpdate(
-        { clerkId: u.id },
-        {
-          clerkId: u.id,
-          email,
-          fullName,
-          profilePicture: u.image_url ?? "",
-        },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-      );
+      const payload = {
+        clerkId: u.id,
+        email,
+        fullName,
+        profilePicture: u.image_url ?? "",
+      };
+
+      await upsertUserFromPayload(payload);
 
       console.log(`[clerk webhook] User synced: ${u.id} (${email})`);
     }

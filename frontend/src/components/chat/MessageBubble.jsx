@@ -1,13 +1,20 @@
 import { withTransform } from "../../lib/imagekit";
 import { MessageVideo } from "./MessageVideo";
 
-// Compress + size images for the bubble (q-auto works for images; f-auto picks WebP/AVIF).
 const IMAGE_TRANSFORM = "q-auto,w-640,f-auto";
+
+function getFileName(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    return decodeURIComponent(pathname.split("/").pop() || "Document");
+  } catch {
+    return "Document";
+  }
+}
 
 export function MessageBubble({ message }) {
   const isOwnMessage = message.role === "me";
-  const hasImage = Boolean(message.imageUrl);
-  const hasVideo = Boolean(message.videoUrl);
+  const { imageUrls, videoUrls, audioUrls, documentUrls } = message;
 
   return (
     <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
@@ -18,14 +25,43 @@ export function MessageBubble({ message }) {
             : "rounded-bl-md bg-surface"
         }`}
       >
-        {hasImage ? (
+        {imageUrls.map((url) => (
           <img
-            src={withTransform(message.imageUrl, IMAGE_TRANSFORM)}
+            key={url}
+            src={withTransform(url, IMAGE_TRANSFORM)}
             alt=""
             className="mb-1.5 max-h-40 max-w-full rounded-lg object-cover sm:max-h-52 sm:rounded-xl"
           />
-        ) : null}
-        {hasVideo ? <MessageVideo src={message.videoUrl} /> : null}
+        ))}
+
+        {videoUrls.map((url) => (
+          <MessageVideo key={url} src={url} />
+        ))}
+
+        {audioUrls.map((url) => (
+          <audio
+            key={url}
+            src={url}
+            controls
+            preload="metadata"
+            className="mb-1.5 block max-w-full"
+          />
+        ))}
+
+        {documentUrls.map((url) => (
+          <a
+            key={url}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`mb-1.5 block truncate text-sm underline ${
+              isOwnMessage ? "text-accent-foreground" : "text-accent"
+            }`}
+          >
+            {getFileName(url)}
+          </a>
+        ))}
+
         {message.text ? (
           <p className="whitespace-pre-wrap wrap-break-word">{message.text}</p>
         ) : null}

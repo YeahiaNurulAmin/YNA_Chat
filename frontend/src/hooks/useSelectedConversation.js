@@ -1,5 +1,6 @@
 import { useMediaQuery } from "./useMediaQuery";
 import { formatMessageTime } from "../lib/utils";
+import { normalizeMediaUrls } from "../lib/media";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -24,8 +25,10 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
     role: String(message.senderId) === String(authUser?._id) ? "me" : "them",
     text: message.text || "",
     time: formatMessageTime(message.createdAt),
-    imageUrl: message.image,
-    videoUrl: message.video,
+    imageUrls: normalizeMediaUrls(message.image),
+    videoUrls: normalizeMediaUrls(message.video),
+    audioUrls: normalizeMediaUrls([...(message.audio || []), ...(message.voice || [])]),
+    documentUrls: normalizeMediaUrls(message.document),
   }));
 
   return {
