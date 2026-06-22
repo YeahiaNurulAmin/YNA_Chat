@@ -1,5 +1,6 @@
 import { withTransform } from "../../lib/imagekit";
 import { MessageVideo } from "./MessageVideo";
+import { MessageVoice } from "./MessageVoice";
 
 const IMAGE_TRANSFORM = "q-auto,w-640,f-auto";
 
@@ -14,7 +15,7 @@ function getFileName(url) {
 
 export function MessageBubble({ message }) {
   const isOwnMessage = message.role === "me";
-  const { imageUrls, videoUrls, audioUrls, documentUrls } = message;
+  const { imageUrls, videoUrls, voiceUrls, audioUrls, documentUrls } = message;
 
   return (
     <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
@@ -36,6 +37,10 @@ export function MessageBubble({ message }) {
 
         {videoUrls.map((url) => (
           <MessageVideo key={url} src={url} />
+        ))}
+
+        {voiceUrls.map((url) => (
+          <MessageVoice key={url} src={url} isOwnMessage={isOwnMessage} />
         ))}
 
         {audioUrls.map((url) => (

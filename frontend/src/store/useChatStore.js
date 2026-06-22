@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { axiosInstance } from "../lib/axios";
-import { validateMediaFiles } from "../lib/media";
+import { validateMediaFiles, MAX_MEDIA_FILE_SIZE } from "../lib/media";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 
@@ -143,6 +143,25 @@ export const useChatStore = create(
         for (const file of files) {
           formData.append("media", file);
         }
+
+        set({ isSendingMedia: true });
+        try {
+          return await get().sendMessage(formData);
+        } finally {
+          set({ isSendingMedia: false });
+        }
+      },
+
+      sendVoiceMessage: async ({ conversationId, blob, extension = "webm" }) => {
+        if (!conversationId || !blob) return false;
+
+        if (blob.size > MAX_MEDIA_FILE_SIZE) {
+          toast.error("Voice message is too large. Max size is 25MB.");
+          return false;
+        }
+
+        const formData = new FormData();
+        formData.append("voice", blob, `voice-note-${Date.now()}.${extension}`);
 
         set({ isSendingMedia: true });
         try {

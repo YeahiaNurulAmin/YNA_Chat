@@ -18,8 +18,15 @@ router.get("/users", getUsersForSidebar);
 router.get("/conversations", getConversationsForSidebar);
 //api/messages/:id
 router.get("/:id", getMessages);
-//api/messages/send/:id — field name "media", up to 10 files
-router.post("/send/:id", upload.array("media", 10), sendMessage);
+//api/messages/send/:id — "media" up to 10 files, "voice" up to 1 voice note
+router.post(
+  "/send/:id",
+  upload.fields([
+    { name: "media", maxCount: 10 },
+    { name: "voice", maxCount: 1 },
+  ]),
+  sendMessage
+);
 
 router.use(handleUploadError);
 

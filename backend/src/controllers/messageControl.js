@@ -72,7 +72,9 @@ export async function sendMessage(req, res) {
     const { text } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
-    const files = req.files ?? [];
+    const mediaFiles = req.files?.media ?? [];
+    const voiceFiles = req.files?.voice ?? [];
+    const allFiles = [...mediaFiles, ...voiceFiles];
 
     const image = [];
     const video = [];
@@ -80,25 +82,44 @@ export async function sendMessage(req, res) {
     const audio = [];
     const document = [];
 
-    if (files.length > 0) {
+    const trimmedText = typeof text === "string" ? text.trim() : "";
+
+    if (allFiles.length > 0) {
       if (!hasImageKitConfig()) {
         return res.status(500).json({ message: "Media upload is not configured" });
       }
 
-      for (const file of files) {
+      for (const file of voiceFiles) {
+        const url = await uploadChatMedia(file);
+        voice.push(url);
+      }
+
+      for (const file of mediaFiles) {
         const url = await uploadChatMedia(file);
 
-        if (file.mimetype.startsWith("image/")) image.push(url);// if the file is an image, push the url to the image array
-        else if (file.mimetype.startsWith("video/")) video.push(url);// if the file is a video, push the url to the video array
-        else if (file.mimetype.startsWith("audio/")) audio.push(url);// if the file is an audio, push the url to the audio array
-        else document.push(url);// if the file is a document, push the url to the document array
+        if (file.mimetype.startsWith("image/")) image.push(url);
+        else if (file.mimetype.startsWith("video/")) video.push(url);
+        else if (file.mimetype.startsWith("audio/")) audio.push(url);
+        else document.push(url);
       }
+    }
+
+    const hasContent =
+      trimmedText ||
+      image.length > 0 ||
+      video.length > 0 ||
+      voice.length > 0 ||
+      audio.length > 0 ||
+      document.length > 0;
+
+    if (!hasContent) {
+      return res.status(400).json({ message: "Message cannot be empty" });
     }
 
     const newMessage = new Message({
       senderId,
       receiverId,
-      text,
+      text: trimmedText || undefined,
       image,
       video,
       voice,

@@ -27,7 +27,8 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
     time: formatMessageTime(message.createdAt),
     imageUrls: normalizeMediaUrls(message.image),
     videoUrls: normalizeMediaUrls(message.video),
-    audioUrls: normalizeMediaUrls([...(message.audio || []), ...(message.voice || [])]),
+    voiceUrls: normalizeMediaUrls(message.voice),
+    audioUrls: normalizeMediaUrls(message.audio),
     documentUrls: normalizeMediaUrls(message.document),
   }));
 
