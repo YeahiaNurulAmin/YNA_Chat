@@ -1,5 +1,4 @@
 import "dotenv/config";
-import dns from "dns";
 import express from "express";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
@@ -18,9 +17,6 @@ const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const PUBLIC_DIR = path.join(process.cwd(), "public");// This is the directory where the static files are stored
 
-
-// Set up DNS servers for MongoDB connection
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 // Middleware
 // Set up Clerk webhook middleware

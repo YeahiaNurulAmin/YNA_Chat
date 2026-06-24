@@ -1,4 +1,8 @@
+import dns from "dns";
 import mongoose from "mongoose";
+
+// Atlas SRV lookups can fail with the system DNS resolver on some networks.
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 export const connectDB = async () => {
     try {
