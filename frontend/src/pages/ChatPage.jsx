@@ -2,6 +2,7 @@ import { useWallpaper } from "../context/wallpaper";
 import { useChatStore } from "../store/useChatStore";
 import { useSelectedConversation } from "../hooks/useSelectedConversation";
 import { useEffect } from "react";
+import { fetchLocationConfig } from "../lib/locationApi";
 import ChatSidebar from "../components/chat/ChatSidebar";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { MessageList } from "../components/chat/MessageList";
@@ -21,6 +22,7 @@ function ChatPage() {
   useEffect(() => {
     getUsers();
     getConversations();
+    void fetchLocationConfig();
   }, [getConversations, getUsers]);
 
   useEffect(() => {

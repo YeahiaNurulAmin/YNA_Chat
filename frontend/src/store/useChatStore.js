@@ -3,6 +3,12 @@ import { persist } from "zustand/middleware";
 
 import { axiosInstance } from "../lib/axios";
 import { validateMediaFiles, MAX_MEDIA_FILE_SIZE } from "../lib/media";
+import {
+  pingLiveLocationSession as apiPingLiveLocation,
+  sendStaticLocation as apiSendStaticLocation,
+  startLiveLocationSession as apiStartLiveLocation,
+  stopLiveLocationSession as apiStopLiveLocation,
+} from "../lib/locationApi";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 
@@ -75,6 +81,23 @@ export const useChatStore = create(
         if (!selectedUser) return false;
 
         const isFormData = messageData instanceof FormData;
+
+        // Safety net: route location payloads to the location API (not /messages/send)
+        if (!isFormData && messageData?.location) {
+          if (messageData.isLiveLocation && messageData.liveSessionId) {
+            const result = await get().pingLiveLocationSession({
+              sessionId: messageData.liveSessionId,
+              location: messageData.location,
+            });
+            return Boolean(result && !result.skipped);
+          }
+
+          return get().sendLocationMessage({
+            conversationId: selectedUser._id,
+            location: messageData.location,
+          });
+        }
+
         const shouldClearComposer =
           !isFormData && Boolean(messageData?.text) && !messageData?.isLiveLocation;
 
@@ -180,31 +203,70 @@ export const useChatStore = create(
         }
       },
 
-      sendLocationMessage: async ({
-        conversationId,
-        location,
-        isLiveLocation = false,
-        liveSessionId,
-        text,
-      }) => {
-        if (!conversationId) return false;
+      sendLocationMessage: async ({ conversationId, location }) => {
+        if (!conversationId || !location) return false;
 
-        const { selectedUser } = get();
+        const { selectedUser, messages } = get();
         if (!selectedUser || String(selectedUser._id) !== String(conversationId)) return false;
-
-        if (!location && !text?.trim()) return false;
-
-        const payload = {
-          ...(text?.trim() ? { text: text.trim() } : {}),
-          ...(location ? { location } : {}),
-          ...(isLiveLocation ? { isLiveLocation: true, liveSessionId } : {}),
-        };
 
         set({ isSendingLocation: true });
         try {
-          return await get().sendMessage(payload);
+          const { message: saved } = await apiSendStaticLocation(conversationId, location);
+          set({ messages: [...messages, saved] });
+          get().getConversations();
+          return true;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to send location");
+          return false;
         } finally {
           set({ isSendingLocation: false });
+        }
+      },
+
+      startLiveLocationSession: async ({ receiverId, intervalMs }) => {
+        try {
+          const session = await apiStartLiveLocation(receiverId, intervalMs);
+          set({
+            emergencyLocationSession: {
+              sessionId: session.sessionId,
+              intervalMs: session.intervalMs,
+              conversationId: receiverId,
+              startedAt: new Date(session.startedAt).getTime(),
+            },
+          });
+          return session;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to start live location");
+          return null;
+        }
+      },
+
+      pingLiveLocationSession: async ({ sessionId, location, force = false }) => {
+        try {
+          const result = await apiPingLiveLocation(sessionId, location, { force });
+          if (result.message) {
+            set({ messages: [...get().messages, result.message] });
+            get().getConversations();
+          }
+          return result;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to send live location update");
+          return null;
+        }
+      },
+
+      stopLiveLocationSession: async ({ sessionId, sendEndMessage = true }) => {
+        try {
+          const result = await apiStopLiveLocation(sessionId, { sendEndMessage });
+          if (result.endMessage) {
+            set({ messages: [...get().messages, result.endMessage] });
+            get().getConversations();
+          }
+          set({ emergencyLocationSession: null });
+          return result;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to stop live location");
+          return null;
         }
       },
 

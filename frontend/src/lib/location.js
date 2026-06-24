@@ -1,4 +1,5 @@
 import toast from "react-hot-toast";
+import { getCachedLocationConfig } from "./locationApi";
 
 export const FREQUENCY_PRESETS = [
   { label: "1s", ms: 1000 },
@@ -32,10 +33,16 @@ export function formatCoordinates(latitude, longitude, precision = 5) {
   return `${Number(latitude).toFixed(precision)}, ${Number(longitude).toFixed(precision)}`;
 }
 
-export function getMapUrl(latitude, longitude) {
+export function getMapUrl(latitude, longitude, zoom = 16) {
   const lat = Number(latitude);
   const lng = Number(longitude);
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
+  const config = getCachedLocationConfig();
+
+  if (config?.mapProvider === "openstreetmap") {
+    return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
+  }
+
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
 }
 
 function latLonToTile(latitude, longitude, zoom) {
@@ -48,11 +55,18 @@ function latLonToTile(latitude, longitude, zoom) {
   return { x, y, zoom };
 }
 
-/** OSM tile preview — staticmap.openstreetmap.de is often unreachable (ERR_NAME_NOT_RESOLVED). */
+/** OSM tile preview — prefer backend provider config when loaded. */
 export function getStaticMapImageUrl(latitude, longitude, zoom = 15) {
   const lat = Number(latitude);
   const lng = Number(longitude);
   const { x, y } = latLonToTile(lat, lng, zoom);
+  const config = getCachedLocationConfig();
+  const tileUrl = config?.tileLayer?.url;
+
+  if (tileUrl && tileUrl.includes("{z}")) {
+    return tileUrl.replace("{s}.", "").replace("{z}", zoom).replace("{x}", x).replace("{y}", y);
+  }
+
   return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
 }
 
@@ -104,18 +118,18 @@ export function getGeolocationErrorMessage(error) {
   return "Could not get your location.";
 }
 
-export function getCurrentLocation({ enableHighAccuracy = true, timeout = 15000 } = {}) {
+export function getCurrentLocation({ enableHighAccuracy = true, timeout = 15000, silent = false } = {}) {
   return new Promise((resolve, reject) => {
     if (!isGeolocationSupported()) {
       const message = "Geolocation is not supported in this browser.";
-      toast.error(message);
+      if (!silent) toast.error(message);
       reject(new Error(message));
       return;
     }
 
     if (!isSecureContext()) {
       const message = "Location requires a secure connection (HTTPS).";
-      toast.error(message);
+      if (!silent) toast.error(message);
       reject(new Error(message));
       return;
     }
@@ -131,7 +145,7 @@ export function getCurrentLocation({ enableHighAccuracy = true, timeout = 15000 
       },
       (error) => {
         const message = mapGeolocationError(error);
-        toast.error(message);
+        if (!silent) toast.error(message);
         reject(new Error(message));
       },
       { enableHighAccuracy, timeout, maximumAge: 0 },

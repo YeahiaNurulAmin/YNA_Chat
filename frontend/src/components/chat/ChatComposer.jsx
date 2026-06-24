@@ -17,13 +17,10 @@ import useKeyboardSound from "../../hooks/useKeyboardSound";
 import { useEmergencyLocationSession } from "../../hooks/useEmergencyLocationSession";
 import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
-import {
-  getCurrentLocationWithRetry,
-  isGeolocationSupported,
-} from "../../lib/location";
 import { MEDIA_ACCEPT } from "../../lib/media";
 import { useChatStore } from "../../store/useChatStore";
 import { EmergencyLocationModal } from "./EmergencyLocationModal";
+import { LocationPickerModal } from "./LocationPickerModal";
 
 const MIN_VOICE_DURATION_SECONDS = 1;
 const LOCATION_LONG_PRESS_MS = 500;
@@ -69,8 +66,8 @@ export function ChatComposer() {
   const [voicePreview, setVoicePreview] = useState(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [elapsedTick, setElapsedTick] = useState(0);
-  const [isSendingCurrentLocation, setIsSendingCurrentLocation] = useState(false);
 
   const {
     isActive: isEmergencyActive,
@@ -93,7 +90,7 @@ export function ChatComposer() {
   const hasText = composerText.trim().length > 0;
   const showVoiceButtons = !hasText && isVoiceSupported && !voicePreview;
   const isVoiceSessionActive = isRecording || voicePreview;
-  const isLocationLoading = isSendingCurrentLocation || isSendingLocation;
+  const isLocationLoading = isSendingLocation;
   const isLocationButtonDisabled =
     isSendingMedia || isLocationLoading || isVoiceSessionActive || isEmergencyActive;
 
@@ -184,28 +181,21 @@ export function ChatComposer() {
     if (didSendMessage) playSoundIfEnabled();
   };
 
-  const handleSendCurrentLocation = async () => {
-    if (!activeConversationId || isLocationButtonDisabled) return;
+  const handleSendPickedLocation = async (location) => {
+    if (!activeConversationId) return false;
 
-    if (!isGeolocationSupported()) {
-      toast.error("Geolocation is not supported in this browser.");
-      return;
-    }
+    const didSend = await sendLocationMessage({
+      conversationId: activeConversationId,
+      location,
+    });
 
-    setIsSendingCurrentLocation(true);
-    try {
-      const location = await getCurrentLocationWithRetry();
-      const didSend = await sendLocationMessage({
-        conversationId: activeConversationId,
-        location,
-      });
+    if (didSend) playSoundIfEnabled();
+    return didSend;
+  };
 
-      if (didSend) playSoundIfEnabled();
-    } catch {
-      // Errors are toasted in getCurrentLocationWithRetry.
-    } finally {
-      setIsSendingCurrentLocation(false);
-    }
+  const handleOpenLocationPicker = () => {
+    if (isLocationButtonDisabled) return;
+    setIsLocationPickerOpen(true);
   };
 
   const handleLocationPointerDown = () => {
@@ -225,7 +215,7 @@ export function ChatComposer() {
     clearLocationLongPress();
 
     if (!wasLongPress && !isLocationButtonDisabled) {
-      void handleSendCurrentLocation();
+      handleOpenLocationPicker();
     }
   };
 
@@ -331,6 +321,7 @@ export function ChatComposer() {
     cancelRecording();
     void stopRecording();
     setIsEmergencyModalOpen(false);
+    setIsLocationPickerOpen(false);
   }, [activeConversationId, cancelRecording, resetVoiceSession, stopRecording]);
 
   useEffect(() => {
@@ -344,6 +335,13 @@ export function ChatComposer() {
 
   return (
     <footer className="shrink-0 border-t border-border px-1.5 pb-2 pt-2 sm:px-2">
+      <LocationPickerModal
+        isOpen={isLocationPickerOpen}
+        onOpenChange={setIsLocationPickerOpen}
+        onSend={handleSendPickedLocation}
+        isSending={isSendingLocation}
+      />
+
       <EmergencyLocationModal
         isOpen={isEmergencyModalOpen}
         onOpenChange={setIsEmergencyModalOpen}
@@ -525,7 +523,7 @@ export function ChatComposer() {
               variant="ghost"
               isIconOnly
               isDisabled={isLocationButtonDisabled}
-              aria-label="Send current location. Long press for emergency live sharing."
+              aria-label="Send location. Long press for emergency live sharing."
               className="size-9 min-w-9 touch-manipulation text-accent"
               onPointerDown={handleLocationPointerDown}
               onPointerUp={handleLocationPointerUp}

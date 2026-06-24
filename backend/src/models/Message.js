@@ -40,6 +40,7 @@ const messageSchema = new mongoose.Schema(
       longitude: { type: Number },
       accuracy: { type: Number },
       capturedAt: { type: Date },
+      label: { type: String },
     },
     isLiveLocation: {
       type: Boolean,

@@ -3,6 +3,7 @@ import { AlertTriangleIcon, LoaderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FREQUENCY_PRESETS, parseFrequencyInput } from "../../lib/location";
+import { fetchLocationConfig } from "../../lib/locationApi";
 
 function formatElapsedTime(startedAt) {
   if (!startedAt) return "0:00";
@@ -33,6 +34,16 @@ export function EmergencyLocationModal({
   const [useCustom, setUseCustom] = useState(false);
   const [elapsedLabel, setElapsedLabel] = useState("0:00");
   const [isStarting, setIsStarting] = useState(false);
+  const [frequencyPresets, setFrequencyPresets] = useState(FREQUENCY_PRESETS);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void fetchLocationConfig().then((config) => {
+      if (config?.frequencyPresets?.length) {
+        setFrequencyPresets(config.frequencyPresets);
+      }
+    });
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isActive || !startedAt) return undefined;
@@ -113,7 +124,7 @@ export function EmergencyLocationModal({
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Update frequency</p>
                     <div className="flex flex-wrap gap-2">
-                      {FREQUENCY_PRESETS.map((preset) => (
+                      {frequencyPresets.map((preset) => (
                         <Button
                           key={preset.ms}
                           size="sm"

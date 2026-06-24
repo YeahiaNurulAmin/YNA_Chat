@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import {
-  distanceMeters,
-  getCurrentLocation,
-  getCurrentLocationWithRetry,
-} from "../lib/location";
+import { getCurrentLocation, getCurrentLocationWithRetry } from "../lib/location";
 import { useChatStore } from "../store/useChatStore";
 
-const POSITION_DEDUPE_METERS = 5;
 const MAX_CONSECUTIVE_FAILURES = 3;
 
 export function useEmergencyLocationSession(activeConversationId) {
-  const sendLocationMessage = useChatStore((state) => state.sendLocationMessage);
-  const setEmergencyLocationSession = useChatStore((state) => state.setEmergencyLocationSession);
+  const startLiveLocationSession = useChatStore((state) => state.startLiveLocationSession);
+  const pingLiveLocationSession = useChatStore((state) => state.pingLiveLocationSession);
+  const stopLiveLocationSession = useChatStore((state) => state.stopLiveLocationSession);
+  const emergencyLocationSession = useChatStore((state) => state.emergencyLocationSession);
 
   const [isActive, setIsActive] = useState(false);
   const [sessionId, setSessionId] = useState(null);
@@ -38,6 +35,16 @@ export function useEmergencyLocationSession(activeConversationId) {
     isActiveRef.current = isActive;
     sessionIdRef.current = sessionId;
   }, [activeConversationId, isActive, sessionId]);
+
+  useEffect(() => {
+    if (!emergencyLocationSession) return;
+    setIsActive(true);
+    setSessionId(emergencyLocationSession.sessionId);
+    setIntervalMs(emergencyLocationSession.intervalMs);
+    setStartedAt(emergencyLocationSession.startedAt);
+    sessionIdRef.current = emergencyLocationSession.sessionId;
+    isActiveRef.current = true;
+  }, [emergencyLocationSession]);
 
   const clearWatch = useCallback(() => {
     if (watchIdRef.current != null) {
@@ -74,32 +81,27 @@ export function useEmergencyLocationSession(activeConversationId) {
     setStartedAt(null);
     latestCoordsRef.current = null;
     consecutiveFailuresRef.current = 0;
-    setEmergencyLocationSession(null);
-  }, [setEmergencyLocationSession]);
+    sessionIdRef.current = null;
+    isActiveRef.current = false;
+  }, []);
 
   const stop = useCallback(
     async ({ sendEndMessage = true } = {}) => {
-      if (!isActiveRef.current && !sessionIdRef.current) return;
+      const currentSessionId = sessionIdRef.current;
+      if (!currentSessionId) return;
 
       clearIntervalTimer();
       clearWatch();
       await releaseWakeLock();
 
-      const currentConversationId = conversationIdRef.current;
-      const currentSessionId = sessionIdRef.current;
-
       resetSessionState();
 
-      if (sendEndMessage && currentConversationId && currentSessionId) {
-        await sendLocationMessage({
-          conversationId: currentConversationId,
-          text: "Live location sharing ended",
-          isLiveLocation: false,
-          liveSessionId: currentSessionId,
-        });
-      }
+      await stopLiveLocationSession({
+        sessionId: currentSessionId,
+        sendEndMessage,
+      });
     },
-    [clearIntervalTimer, clearWatch, releaseWakeLock, resetSessionState, sendLocationMessage],
+    [clearIntervalTimer, clearWatch, releaseWakeLock, resetSessionState, stopLiveLocationSession],
   );
 
   useEffect(() => {
@@ -108,9 +110,8 @@ export function useEmergencyLocationSession(activeConversationId) {
 
   const sendPing = useCallback(
     async ({ force = false } = {}) => {
-      const conversationId = conversationIdRef.current;
       const currentSessionId = sessionIdRef.current;
-      if (!conversationId || !currentSessionId) return;
+      if (!currentSessionId) return;
 
       let coords = latestCoordsRef.current;
       if (!coords) {
@@ -128,30 +129,15 @@ export function useEmergencyLocationSession(activeConversationId) {
         }
       }
 
-      if (
-        !force &&
-        lastPosition &&
-        distanceMeters(
-          lastPosition.latitude,
-          lastPosition.longitude,
-          coords.latitude,
-          coords.longitude,
-        ) < POSITION_DEDUPE_METERS
-      ) {
-        return;
-      }
-
-      const didSend = await sendLocationMessage({
-        conversationId,
+      const result = await pingLiveLocationSession({
+        sessionId: currentSessionId,
         location: coords,
-        isLiveLocation: true,
-        liveSessionId: currentSessionId,
+        force,
       });
 
-      if (!didSend) {
-        toast.error("Failed to send live location update");
-        return;
-      }
+      if (!result) return;
+
+      if (result.skipped) return;
 
       consecutiveFailuresRef.current = 0;
       setError(null);
@@ -159,7 +145,7 @@ export function useEmergencyLocationSession(activeConversationId) {
       setLastSentAt(Date.now());
       setSendCount((count) => count + 1);
     },
-    [lastPosition, sendLocationMessage, stop],
+    [pingLiveLocationSession, stop],
   );
 
   const start = useCallback(
@@ -177,25 +163,24 @@ export function useEmergencyLocationSession(activeConversationId) {
         return false;
       }
 
-      const newSessionId = crypto.randomUUID();
-      const startedAtMs = Date.now();
+      const session = await startLiveLocationSession({
+        receiverId: conversationId,
+        intervalMs: chosenIntervalMs,
+      });
+
+      if (!session) return false;
+
+      const startedAtMs = new Date(session.startedAt).getTime();
 
       setIsActive(true);
-      setSessionId(newSessionId);
-      setIntervalMs(chosenIntervalMs);
+      setSessionId(session.sessionId);
+      setIntervalMs(session.intervalMs);
       setStartedAt(startedAtMs);
       setSendCount(0);
       setLastPosition(null);
       setError(null);
-      sessionIdRef.current = newSessionId;
+      sessionIdRef.current = session.sessionId;
       isActiveRef.current = true;
-
-      setEmergencyLocationSession({
-        sessionId: newSessionId,
-        intervalMs: chosenIntervalMs,
-        conversationId,
-        startedAt: startedAtMs,
-      });
 
       if ("wakeLock" in navigator) {
         try {
@@ -224,11 +209,11 @@ export function useEmergencyLocationSession(activeConversationId) {
 
       intervalIdRef.current = setInterval(() => {
         void sendPing();
-      }, chosenIntervalMs);
+      }, session.intervalMs);
 
       return true;
     },
-    [sendPing, setEmergencyLocationSession],
+    [sendPing, startLiveLocationSession],
   );
 
   useEffect(() => {
@@ -253,16 +238,15 @@ export function useEmergencyLocationSession(activeConversationId) {
   }, [sendPing, stop]);
 
   useEffect(() => {
-    const session = useChatStore.getState().emergencyLocationSession;
     if (
       isActive &&
-      session?.conversationId &&
+      emergencyLocationSession?.conversationId &&
       activeConversationId &&
-      String(session.conversationId) !== String(activeConversationId)
+      String(emergencyLocationSession.conversationId) !== String(activeConversationId)
     ) {
       void stop({ sendEndMessage: false });
     }
-  }, [activeConversationId, isActive, stop]);
+  }, [activeConversationId, emergencyLocationSession, isActive, stop]);
 
   useEffect(() => {
     return () => {
