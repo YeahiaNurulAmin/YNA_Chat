@@ -70,6 +70,7 @@ export function ChatComposer() {
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [elapsedTick, setElapsedTick] = useState(0);
+  const [isSendingCurrentLocation, setIsSendingCurrentLocation] = useState(false);
 
   const {
     isActive: isEmergencyActive,
@@ -92,8 +93,9 @@ export function ChatComposer() {
   const hasText = composerText.trim().length > 0;
   const showVoiceButtons = !hasText && isVoiceSupported && !voicePreview;
   const isVoiceSessionActive = isRecording || voicePreview;
-  const isLocationDisabled =
-    isSendingMedia || isSendingLocation || isVoiceSessionActive || isEmergencyActive;
+  const isLocationLoading = isSendingCurrentLocation || isSendingLocation;
+  const isLocationButtonDisabled =
+    isSendingMedia || isLocationLoading || isVoiceSessionActive || isEmergencyActive;
 
   const elapsedLabel =
     isEmergencyActive && emergencyStartedAt ? formatElapsedTime(emergencyStartedAt) : "0:00";
@@ -183,13 +185,14 @@ export function ChatComposer() {
   };
 
   const handleSendCurrentLocation = async () => {
-    if (!activeConversationId || isLocationDisabled) return;
+    if (!activeConversationId || isLocationButtonDisabled) return;
 
     if (!isGeolocationSupported()) {
       toast.error("Geolocation is not supported in this browser.");
       return;
     }
 
+    setIsSendingCurrentLocation(true);
     try {
       const location = await getCurrentLocationWithRetry();
       const didSend = await sendLocationMessage({
@@ -200,11 +203,13 @@ export function ChatComposer() {
       if (didSend) playSoundIfEnabled();
     } catch {
       // Errors are toasted in getCurrentLocationWithRetry.
+    } finally {
+      setIsSendingCurrentLocation(false);
     }
   };
 
   const handleLocationPointerDown = () => {
-    if (isLocationDisabled) return;
+    if (isLocationButtonDisabled) return;
 
     locationLongPressTriggeredRef.current = false;
     clearLocationLongPress();
@@ -219,7 +224,7 @@ export function ChatComposer() {
     const wasLongPress = locationLongPressTriggeredRef.current;
     clearLocationLongPress();
 
-    if (!wasLongPress && !isLocationDisabled) {
+    if (!wasLongPress && !isLocationButtonDisabled) {
       void handleSendCurrentLocation();
     }
   };
@@ -237,7 +242,7 @@ export function ChatComposer() {
   };
 
   const beginTapRecording = async () => {
-    if (isSendingMedia || isRecording || voicePreview || isEmergencyActive) return;
+    if (isSendingMedia || isRecording || voicePreview) return;
 
     const started = await startRecording();
     if (!started) {
@@ -360,7 +365,7 @@ export function ChatComposer() {
         </div>
       ) : null}
 
-      {isSendingLocation && !isEmergencyActive ? (
+      {isLocationLoading && !isEmergencyActive ? (
         <div className="mx-auto mb-2 flex max-w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted">
           <LoaderIcon
             className="size-4 shrink-0 animate-spin text-accent"
@@ -372,7 +377,7 @@ export function ChatComposer() {
       ) : null}
 
       {isEmergencyActive ? (
-        <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-3 sm:px-4">
+        <div className="mx-auto mb-2 flex w-full max-w-full items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
             <div className="min-w-0">
@@ -395,7 +400,9 @@ export function ChatComposer() {
             Stop
           </Button>
         </div>
-      ) : voicePreview ? (
+      ) : null}
+
+      {voicePreview ? (
         <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-3 py-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -499,7 +506,7 @@ export function ChatComposer() {
             accept={MEDIA_ACCEPT}
             multiple
             className="sr-only"
-            disabled={isLocationDisabled}
+            disabled={isSendingMedia || isVoiceSessionActive}
             tabIndex={-1}
             aria-hidden
             onChange={handleMediaPick}
@@ -507,7 +514,7 @@ export function ChatComposer() {
           <Button
             variant="ghost"
             isIconOnly
-            isDisabled={isLocationDisabled}
+            isDisabled={isSendingMedia || isVoiceSessionActive}
             className="size-9 shrink-0 touch-manipulation self-end text-accent"
             onPress={() => mediaInputRef.current?.click()}
           >
@@ -517,7 +524,7 @@ export function ChatComposer() {
             <Button
               variant="ghost"
               isIconOnly
-              isDisabled={isLocationDisabled}
+              isDisabled={isLocationButtonDisabled}
               aria-label="Send current location. Long press for emergency live sharing."
               className="size-9 min-w-9 touch-manipulation text-accent"
               onPointerDown={handleLocationPointerDown}
@@ -525,7 +532,7 @@ export function ChatComposer() {
               onPointerLeave={clearLocationLongPress}
               onPointerCancel={clearLocationLongPress}
             >
-              {isSendingLocation ? (
+              {isLocationLoading ? (
                 <LoaderIcon className="size-5 animate-spin sm:size-6" strokeWidth={2} />
               ) : (
                 <MapPinIcon className="size-5 sm:size-6" strokeWidth={2} />
@@ -534,7 +541,7 @@ export function ChatComposer() {
             <Button
               variant="ghost"
               isIconOnly
-              isDisabled={isLocationDisabled}
+              isDisabled={isLocationButtonDisabled}
               aria-label="Emergency live location"
               className="size-7 min-w-7 touch-manipulation text-muted"
               onPress={() => setIsEmergencyModalOpen(true)}
@@ -562,7 +569,7 @@ export function ChatComposer() {
             <div className="flex shrink-0 items-end gap-1">
               <Button
                 variant="primary"
-                isDisabled={isSendingMedia || isEmergencyActive}
+                isDisabled={isSendingMedia}
                 aria-label="Tap to record voice message"
                 className="h-9 gap-1 px-2.5 sm:px-3"
                 onPress={beginTapRecording}

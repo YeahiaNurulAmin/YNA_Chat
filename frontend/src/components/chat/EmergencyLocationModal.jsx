@@ -1,5 +1,5 @@
 import { Button, Modal, useOverlayState } from "@heroui/react";
-import { AlertTriangleIcon } from "lucide-react";
+import { AlertTriangleIcon, LoaderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FREQUENCY_PRESETS, parseFrequencyInput } from "../../lib/location";
@@ -32,6 +32,7 @@ export function EmergencyLocationModal({
   const [customUnit, setCustomUnit] = useState("seconds");
   const [useCustom, setUseCustom] = useState(false);
   const [elapsedLabel, setElapsedLabel] = useState("0:00");
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     if (!isActive || !startedAt) return undefined;
@@ -56,11 +57,16 @@ export function EmergencyLocationModal({
 
   const handleStart = async () => {
     const intervalMs = resolveIntervalMs();
-    if (!intervalMs) return;
+    if (!intervalMs || isStarting) return;
 
-    const started = await onStart({ intervalMs });
-    if (started) {
-      onOpenChange?.(false);
+    setIsStarting(true);
+    try {
+      const started = await onStart({ intervalMs });
+      if (started) {
+        onOpenChange?.(false);
+      }
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -154,11 +160,18 @@ export function EmergencyLocationModal({
                   </div>
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                    <Button variant="ghost" onPress={() => onOpenChange?.(false)}>
+                    <Button variant="ghost" isDisabled={isStarting} onPress={() => onOpenChange?.(false)}>
                       Cancel
                     </Button>
-                    <Button variant="danger" onPress={handleStart}>
-                      Start sharing
+                    <Button variant="danger" isDisabled={isStarting} className="gap-2" onPress={handleStart}>
+                      {isStarting ? (
+                        <>
+                          <LoaderIcon className="size-4 animate-spin" strokeWidth={2} aria-hidden />
+                          Starting...
+                        </>
+                      ) : (
+                        "Start sharing"
+                      )}
                     </Button>
                   </div>
                 </>
