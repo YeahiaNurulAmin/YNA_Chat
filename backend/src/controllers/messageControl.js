@@ -3,6 +3,75 @@ import Message from "../models/Message.js";
 import { hasImageKitConfig, uploadChatMedia } from "../lib/imagekit.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 
+const LIVE_LOCATION_MIN_INTERVAL_MS = 2000;
+const liveLocationThrottle = new Map();
+
+function parseLocation(raw) {
+  if (!raw) return { location: null };
+
+  let location = raw;
+  if (typeof raw === "string") {
+    try {
+      location = JSON.parse(raw);
+    } catch {
+      return { error: "Invalid location payload" };
+    }
+  }
+
+  if (typeof location !== "object" || location === null || Array.isArray(location)) {
+    return { error: "Invalid location payload" };
+  }
+
+  const { latitude, longitude, accuracy, capturedAt } = location;
+
+  if (
+    latitude === undefined ||
+    latitude === null ||
+    longitude === undefined ||
+    longitude === null
+  ) {
+    return { error: "Location requires latitude and longitude" };
+  }
+
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    return { error: "Invalid location coordinates" };
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return { error: "Location coordinates out of range" };
+  }
+
+  const parsed = { latitude: lat, longitude: lng };
+
+  if (accuracy !== undefined && accuracy !== null && accuracy !== "") {
+    const acc = Number(accuracy);
+    if (!Number.isNaN(acc)) parsed.accuracy = acc;
+  }
+
+  if (capturedAt) {
+    const date = new Date(capturedAt);
+    if (!Number.isNaN(date.getTime())) parsed.capturedAt = date;
+  }
+
+  return { location: parsed };
+}
+
+function checkLiveLocationThrottle(senderId, liveSessionId) {
+  const key = `${senderId}:${liveSessionId}`;
+  const now = Date.now();
+  const lastPing = liveLocationThrottle.get(key);
+
+  if (lastPing && now - lastPing < LIVE_LOCATION_MIN_INTERVAL_MS) {
+    return false;
+  }
+
+  liveLocationThrottle.set(key, now);
+  return true;
+}
+
 export async function getUsersForSidebar(req, res) {
   try {
     const loggedInUserId = req.user._id; // get the logged in user's id
@@ -69,12 +138,35 @@ export async function getMessages(req, res) {
 
 export async function sendMessage(req, res) {
   try {
-    const { text } = req.body;
+    const { text, location: rawLocation, liveSessionId: rawLiveSessionId } = req.body;
+    const isLiveLocation =
+      req.body.isLiveLocation === true || req.body.isLiveLocation === "true";
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
     const mediaFiles = req.files?.media ?? [];
     const voiceFiles = req.files?.voice ?? [];
     const allFiles = [...mediaFiles, ...voiceFiles];
+
+    const locationResult = parseLocation(rawLocation);
+    if (locationResult.error) {
+      return res.status(400).json({ message: locationResult.error });
+    }
+    const location = locationResult.location;
+
+    const liveSessionId =
+      typeof rawLiveSessionId === "string" ? rawLiveSessionId.trim() : undefined;
+
+    if (isLiveLocation) {
+      if (!location) {
+        return res.status(400).json({ message: "Live location requires location data" });
+      }
+      if (!liveSessionId) {
+        return res.status(400).json({ message: "Live location requires liveSessionId" });
+      }
+      if (!checkLiveLocationThrottle(senderId, liveSessionId)) {
+        return res.status(429).json({ message: "Live location updates are too frequent" });
+      }
+    }
 
     const image = [];
     const video = [];
@@ -110,7 +202,8 @@ export async function sendMessage(req, res) {
       video.length > 0 ||
       voice.length > 0 ||
       audio.length > 0 ||
-      document.length > 0;
+      document.length > 0 ||
+      location;
 
     if (!hasContent) {
       return res.status(400).json({ message: "Message cannot be empty" });
@@ -125,6 +218,9 @@ export async function sendMessage(req, res) {
       voice,
       audio,
       document,
+      ...(location && { location }),
+      isLiveLocation,
+      ...(liveSessionId && { liveSessionId }),
     });
 
     await newMessage.save();

@@ -22,6 +22,8 @@ export const useChatStore = create(
       composerText: "",
       isSoundEnabled: true,
       isSendingMedia: false,
+      isSendingLocation: false,
+      emergencyLocationSession: null,
 
       getUsers: async () => {
         set({ isUsersLoading: true });
@@ -72,9 +74,16 @@ export const useChatStore = create(
         const { selectedUser, messages } = get();
         if (!selectedUser) return false;
 
+        const isFormData = messageData instanceof FormData;
+        const shouldClearComposer =
+          !isFormData && Boolean(messageData?.text) && !messageData?.isLiveLocation;
+
         try {
           const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
-          set({ messages: [...messages, res.data], composerText: "" });
+          set({
+            messages: [...messages, res.data],
+            ...(shouldClearComposer ? { composerText: "" } : {}),
+          });
           get().getConversations();
           return true;
         } catch (error) {
@@ -169,6 +178,42 @@ export const useChatStore = create(
         } finally {
           set({ isSendingMedia: false });
         }
+      },
+
+      sendLocationMessage: async ({
+        conversationId,
+        location,
+        isLiveLocation = false,
+        liveSessionId,
+        text,
+      }) => {
+        if (!conversationId) return false;
+
+        const { selectedUser } = get();
+        if (!selectedUser || String(selectedUser._id) !== String(conversationId)) return false;
+
+        if (!location && !text?.trim()) return false;
+
+        const payload = {
+          ...(text?.trim() ? { text: text.trim() } : {}),
+          ...(location ? { location } : {}),
+          ...(isLiveLocation ? { isLiveLocation: true, liveSessionId } : {}),
+        };
+
+        set({ isSendingLocation: true });
+        try {
+          return await get().sendMessage(payload);
+        } finally {
+          set({ isSendingLocation: false });
+        }
+      },
+
+      setEmergencyLocationSession: (session) => {
+        set({ emergencyLocationSession: session });
+      },
+
+      stopEmergencyLocationSession: () => {
+        set({ emergencyLocationSession: null });
       },
     }),
     {

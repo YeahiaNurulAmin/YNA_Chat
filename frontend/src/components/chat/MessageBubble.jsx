@@ -2,12 +2,15 @@ import { withTransform } from "../../lib/imagekit";
 import { MessageVideo } from "./MessageVideo";
 import { MessageVoice } from "./MessageVoice";
 import { MessageDocument } from "./MessageDocument";
+import { MessageLocation } from "./MessageLocation";
 
 const IMAGE_TRANSFORM = "q-auto,w-640,f-auto";
 
 export function MessageBubble({ message }) {
   const isOwnMessage = message.role === "me";
-  const { imageUrls, videoUrls, voiceUrls, audioUrls, documentUrls } = message;
+  const { imageUrls, videoUrls, voiceUrls, audioUrls, documentUrls, location } = message;
+  const hasLocation = Boolean(location?.latitude && location?.longitude);
+  const showFooterTime = message.text || !hasLocation;
 
   return (
     <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
@@ -49,16 +52,27 @@ export function MessageBubble({ message }) {
           <MessageDocument key={url} url={url} isOwnMessage={isOwnMessage} />
         ))}
 
+        {hasLocation ? (
+          <MessageLocation
+            location={location}
+            isLiveLocation={message.isLiveLocation}
+            time={message.time}
+            isOwnMessage={isOwnMessage}
+          />
+        ) : null}
+
         {message.text ? (
           <p className="whitespace-pre-wrap wrap-break-word">{message.text}</p>
         ) : null}
-        <p
-          className={`mt-1 text-[11px] tabular-nums ${
-            isOwnMessage ? "text-accent-foreground/75" : "text-muted"
-          }`}
-        >
-          {message.time}
-        </p>
+        {showFooterTime ? (
+          <p
+            className={`mt-1 text-[11px] tabular-nums ${
+              isOwnMessage ? "text-accent-foreground/75" : "text-muted"
+            }`}
+          >
+            {message.time}
+          </p>
+        ) : null}
       </div>
     </div>
   );

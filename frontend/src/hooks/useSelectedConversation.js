@@ -1,8 +1,11 @@
 import { useMediaQuery } from "./useMediaQuery";
 import { formatMessageTime } from "../lib/utils";
 import { normalizeMediaUrls } from "../lib/media";
+import { groupMessagesForDisplay } from "../lib/messages";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
+
+export { groupMessagesForDisplay };
 
 // John Doe -> JD
 export function getInitials(name) {
@@ -30,6 +33,9 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
     voiceUrls: normalizeMediaUrls(message.voice),
     audioUrls: normalizeMediaUrls(message.audio),
     documentUrls: normalizeMediaUrls(message.document),
+    location: message.location ?? null,
+    isLiveLocation: message.isLiveLocation ?? false,
+    liveSessionId: message.liveSessionId ?? null,
   }));
 
   return {
@@ -41,7 +47,7 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
       avatarUrl: user.profilePic,
       initials: getInitials(user.fullName),
     },
-    messages: mappedMessages,
+    messages: groupMessagesForDisplay(mappedMessages),
   };
 }
 

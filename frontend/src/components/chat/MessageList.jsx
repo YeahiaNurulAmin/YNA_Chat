@@ -1,12 +1,16 @@
 import useScrollToBottom from "../../hooks/useScrollToBottom";
 import { MessageBubble } from "./MessageBubble";
+import { LiveLocationGroup } from "./LiveLocationGroup";
 import { NoConversationPlaceholder } from "./NoConversationPlaceholder";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
-export function MessageList() {
+export function MessageList({ displayMessages }) {
   const { activeConversation, activeConversationId } = useSelectedConversation();
+  const messages = displayMessages ?? activeConversation?.messages ?? [];
 
-  const lastMessageId = activeConversation?.messages.at(-1)?.id;
+  const lastItem = messages.at(-1);
+  const lastMessageId =
+    lastItem?.kind === "liveLocationGroup" ? lastItem.latest?.id : lastItem?.id;
   const messagesScrollRef = useScrollToBottom(activeConversationId, lastMessageId);
 
   return (
@@ -19,9 +23,13 @@ export function MessageList() {
           <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-wide text-muted">
             Today
           </p>
-          {activeConversation.messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
+          {messages.map((item) =>
+            item.kind === "liveLocationGroup" ? (
+              <LiveLocationGroup key={item.id} group={item} />
+            ) : (
+              <MessageBubble key={item.id} message={item} />
+            ),
+          )}
         </div>
       ) : (
         <NoConversationPlaceholder />

@@ -35,6 +35,19 @@ const messageSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    location: {
+      latitude: { type: Number },
+      longitude: { type: Number },
+      accuracy: { type: Number },
+      capturedAt: { type: Date },
+    },
+    isLiveLocation: {
+      type: Boolean,
+      default: false,
+    },
+    liveSessionId: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

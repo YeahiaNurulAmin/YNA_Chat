@@ -1,7 +1,9 @@
 import { Button, TextArea } from "@heroui/react";
 import {
+  ChevronDownIcon,
   ImageIcon,
   LoaderIcon,
+  MapPinIcon,
   MicIcon,
   PauseIcon,
   PlayIcon,
@@ -12,13 +14,19 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import useKeyboardSound from "../../hooks/useKeyboardSound";
+import { useEmergencyLocationSession } from "../../hooks/useEmergencyLocationSession";
 import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
+import { useSelectedConversation } from "../../hooks/useSelectedConversation";
+import {
+  getCurrentLocationWithRetry,
+  isGeolocationSupported,
+} from "../../lib/location";
 import { MEDIA_ACCEPT } from "../../lib/media";
 import { useChatStore } from "../../store/useChatStore";
-import { useSelectedConversation } from "../../hooks/useSelectedConversation";
-import { Mic } from 'lucide-react';
+import { EmergencyLocationModal } from "./EmergencyLocationModal";
 
 const MIN_VOICE_DURATION_SECONDS = 1;
+const LOCATION_LONG_PRESS_MS = 500;
 
 function formatRecordingTime(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds));
@@ -27,12 +35,23 @@ function formatRecordingTime(totalSeconds) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
+function formatElapsedTime(startedAt) {
+  if (!startedAt) return "0:00";
+
+  const totalSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function ChatComposer() {
   const composerText = useChatStore((state) => state.composerText);
   const isSoundEnabled = useChatStore((state) => state.isSoundEnabled);
   const sendMediaMessage = useChatStore((state) => state.sendMediaMessage);
   const sendVoiceMessage = useChatStore((state) => state.sendVoiceMessage);
+  const sendLocationMessage = useChatStore((state) => state.sendLocationMessage);
   const isSendingMedia = useChatStore((state) => state.isSendingMedia);
+  const isSendingLocation = useChatStore((state) => state.isSendingLocation);
   const sendTextMessage = useChatStore((state) => state.sendTextMessage);
   const setComposerText = useChatStore((state) => state.setComposerText);
   const { activeConversationId } = useSelectedConversation();
@@ -43,11 +62,22 @@ export function ChatComposer() {
   const skipHoldSendRef = useRef(false);
   const recordingModeRef = useRef(null);
   const prevConversationIdRef = useRef(activeConversationId);
+  const locationLongPressRef = useRef(null);
+  const locationLongPressTriggeredRef = useRef(false);
 
   const [recordingMode, setRecordingMode] = useState(null);
-  recordingModeRef.current = recordingMode;
   const [voicePreview, setVoicePreview] = useState(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
+  const [elapsedTick, setElapsedTick] = useState(0);
+
+  const {
+    isActive: isEmergencyActive,
+    startedAt: emergencyStartedAt,
+    sendCount: emergencySendCount,
+    start: startEmergencySession,
+    stop: stopEmergencySession,
+  } = useEmergencyLocationSession(activeConversationId);
 
   const {
     isSupported: isVoiceSupported,
@@ -62,6 +92,12 @@ export function ChatComposer() {
   const hasText = composerText.trim().length > 0;
   const showVoiceButtons = !hasText && isVoiceSupported && !voicePreview;
   const isVoiceSessionActive = isRecording || voicePreview;
+  const isLocationDisabled =
+    isSendingMedia || isSendingLocation || isVoiceSessionActive || isEmergencyActive;
+
+  const elapsedLabel =
+    isEmergencyActive && emergencyStartedAt ? formatElapsedTime(emergencyStartedAt) : "0:00";
+  void elapsedTick;
 
   const playSoundIfEnabled = () => {
     if (isSoundEnabled) playRandomKeyStrokeSound();
@@ -82,6 +118,13 @@ export function ChatComposer() {
     skipHoldSendRef.current = false;
     clearVoicePreview();
   }, [clearVoicePreview]);
+
+  const clearLocationLongPress = useCallback(() => {
+    if (locationLongPressRef.current != null) {
+      clearTimeout(locationLongPressRef.current);
+      locationLongPressRef.current = null;
+    }
+  }, []);
 
   const applyRecordingResult = useCallback(
     (result, { sendImmediately = false } = {}) => {
@@ -139,8 +182,62 @@ export function ChatComposer() {
     if (didSendMessage) playSoundIfEnabled();
   };
 
+  const handleSendCurrentLocation = async () => {
+    if (!activeConversationId || isLocationDisabled) return;
+
+    if (!isGeolocationSupported()) {
+      toast.error("Geolocation is not supported in this browser.");
+      return;
+    }
+
+    try {
+      const location = await getCurrentLocationWithRetry();
+      const didSend = await sendLocationMessage({
+        conversationId: activeConversationId,
+        location,
+      });
+
+      if (didSend) playSoundIfEnabled();
+    } catch {
+      // Errors are toasted in getCurrentLocationWithRetry.
+    }
+  };
+
+  const handleLocationPointerDown = () => {
+    if (isLocationDisabled) return;
+
+    locationLongPressTriggeredRef.current = false;
+    clearLocationLongPress();
+    locationLongPressRef.current = setTimeout(() => {
+      locationLongPressTriggeredRef.current = true;
+      setIsEmergencyModalOpen(true);
+      locationLongPressRef.current = null;
+    }, LOCATION_LONG_PRESS_MS);
+  };
+
+  const handleLocationPointerUp = () => {
+    const wasLongPress = locationLongPressTriggeredRef.current;
+    clearLocationLongPress();
+
+    if (!wasLongPress && !isLocationDisabled) {
+      void handleSendCurrentLocation();
+    }
+  };
+
+  const handleStartEmergencySession = async ({ intervalMs }) => {
+    if (!activeConversationId) return false;
+    return startEmergencySession({
+      conversationId: activeConversationId,
+      intervalMs,
+    });
+  };
+
+  const handleStopEmergencySession = async () => {
+    await stopEmergencySession();
+  };
+
   const beginTapRecording = async () => {
-    if (isSendingMedia || isRecording || voicePreview) return;
+    if (isSendingMedia || isRecording || voicePreview || isEmergencyActive) return;
 
     const started = await startRecording();
     if (!started) {
@@ -157,50 +254,6 @@ export function ChatComposer() {
   };
 
   const handleCancelTapRecording = async () => {
-    cancelRecording();
-    await stopRecording();
-    setRecordingMode(null);
-  };
-
-  const handleHoldPointerDown = async (event) => {
-    if (isSendingMedia || isRecording || voicePreview) return;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    isHoldActiveRef.current = true;
-    skipHoldSendRef.current = false;
-
-    const started = await startRecording();
-    if (!started) {
-      isHoldActiveRef.current = false;
-      toast.error("Microphone access is required to send voice messages");
-      return;
-    }
-
-    setRecordingMode("hold");
-  };
-
-  const handleHoldPointerUp = async (event) => {
-    if (!isHoldActiveRef.current) return;
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    isHoldActiveRef.current = false;
-
-    if (skipHoldSendRef.current) {
-      skipHoldSendRef.current = false;
-      setRecordingMode(null);
-      return;
-    }
-
-    const result = await stopRecording();
-    applyRecordingResult(result, { sendImmediately: true });
-  };
-
-  const handleCancelHoldRecording = async () => {
-    skipHoldSendRef.current = true;
-    isHoldActiveRef.current = false;
     cancelRecording();
     await stopRecording();
     setRecordingMode(null);
@@ -243,6 +296,10 @@ export function ChatComposer() {
   };
 
   useEffect(() => {
+    recordingModeRef.current = recordingMode;
+  }, [recordingMode]);
+
+  useEffect(() => {
     setOnMaxDuration(async () => {
       if (recordingModeRef.current === "hold") {
         const result = await stopRecording();
@@ -268,10 +325,30 @@ export function ChatComposer() {
     resetVoiceSession();
     cancelRecording();
     void stopRecording();
+    setIsEmergencyModalOpen(false);
   }, [activeConversationId, cancelRecording, resetVoiceSession, stopRecording]);
+
+  useEffect(() => {
+    if (!isEmergencyActive || !emergencyStartedAt) return undefined;
+
+    const timerId = setInterval(() => setElapsedTick((tick) => tick + 1), 1000);
+    return () => clearInterval(timerId);
+  }, [emergencyStartedAt, isEmergencyActive]);
+
+  useEffect(() => () => clearLocationLongPress(), [clearLocationLongPress]);
 
   return (
     <footer className="shrink-0 border-t border-border px-1.5 pb-2 pt-2 sm:px-2">
+      <EmergencyLocationModal
+        isOpen={isEmergencyModalOpen}
+        onOpenChange={setIsEmergencyModalOpen}
+        onStart={handleStartEmergencySession}
+        onStop={handleStopEmergencySession}
+        isActive={isEmergencyActive}
+        startedAt={emergencyStartedAt}
+        sendCount={emergencySendCount}
+      />
+
       {isSendingMedia ? (
         <div className="mx-auto mb-2 flex max-w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted">
           <LoaderIcon
@@ -283,7 +360,42 @@ export function ChatComposer() {
         </div>
       ) : null}
 
-      {voicePreview ? (
+      {isSendingLocation && !isEmergencyActive ? (
+        <div className="mx-auto mb-2 flex max-w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted">
+          <LoaderIcon
+            className="size-4 shrink-0 animate-spin text-accent"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <span className="truncate">Getting location...</span>
+        </div>
+      ) : null}
+
+      {isEmergencyActive ? (
+        <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-3 py-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-red-700 dark:text-red-400">
+                Live location active
+              </span>
+              <span className="block truncate text-xs text-muted">
+                {elapsedLabel} · {emergencySendCount} update{emergencySendCount === 1 ? "" : "s"} ·
+                best-effort — keep app open
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="danger"
+            size="sm"
+            aria-label="Stop live location sharing"
+            className="h-8 shrink-0 px-3"
+            onPress={handleStopEmergencySession}
+          >
+            Stop
+          </Button>
+        </div>
+      ) : voicePreview ? (
         <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-3 py-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -348,9 +460,7 @@ export function ChatComposer() {
             <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
             <div className="min-w-0">
               <span className="block truncate text-sm font-medium text-foreground">Recording</span>
-              <span className="block truncate text-xs text-muted">
-                {recordingMode === "hold" ? "Release to send" : "Tap stop when finished"}
-              </span>
+              <span className="block truncate text-xs text-muted">Tap stop when finished</span>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -362,9 +472,7 @@ export function ChatComposer() {
               size="sm"
               aria-label="Cancel recording"
               className="h-8 gap-1.5 px-2.5 text-muted"
-              onPress={
-                recordingMode === "hold" ? handleCancelHoldRecording : handleCancelTapRecording
-              }
+              onPress={handleCancelTapRecording}
             >
               <XIcon className="size-3.5" strokeWidth={2} />
               <span className="text-xs font-medium">Cancel</span>
@@ -391,7 +499,7 @@ export function ChatComposer() {
             accept={MEDIA_ACCEPT}
             multiple
             className="sr-only"
-            disabled={isSendingMedia || isVoiceSessionActive}
+            disabled={isLocationDisabled}
             tabIndex={-1}
             aria-hidden
             onChange={handleMediaPick}
@@ -399,12 +507,41 @@ export function ChatComposer() {
           <Button
             variant="ghost"
             isIconOnly
-            isDisabled={isSendingMedia || isVoiceSessionActive}
+            isDisabled={isLocationDisabled}
             className="size-9 shrink-0 touch-manipulation self-end text-accent"
             onPress={() => mediaInputRef.current?.click()}
           >
             <ImageIcon className="size-5 sm:size-6" strokeWidth={2} />
           </Button>
+          <div className="flex shrink-0 items-end self-end">
+            <Button
+              variant="ghost"
+              isIconOnly
+              isDisabled={isLocationDisabled}
+              aria-label="Send current location. Long press for emergency live sharing."
+              className="size-9 min-w-9 touch-manipulation text-accent"
+              onPointerDown={handleLocationPointerDown}
+              onPointerUp={handleLocationPointerUp}
+              onPointerLeave={clearLocationLongPress}
+              onPointerCancel={clearLocationLongPress}
+            >
+              {isSendingLocation ? (
+                <LoaderIcon className="size-5 animate-spin sm:size-6" strokeWidth={2} />
+              ) : (
+                <MapPinIcon className="size-5 sm:size-6" strokeWidth={2} />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              isIconOnly
+              isDisabled={isLocationDisabled}
+              aria-label="Emergency live location"
+              className="size-7 min-w-7 touch-manipulation text-muted"
+              onPress={() => setIsEmergencyModalOpen(true)}
+            >
+              <ChevronDownIcon className="size-4" strokeWidth={2} />
+            </Button>
+          </div>
           <TextArea
             fullWidth
             variant="secondary"
@@ -425,12 +562,12 @@ export function ChatComposer() {
             <div className="flex shrink-0 items-end gap-1">
               <Button
                 variant="primary"
-                isDisabled={isSendingMedia}
+                isDisabled={isSendingMedia || isEmergencyActive}
                 aria-label="Tap to record voice message"
                 className="h-9 gap-1 px-2.5 sm:px-3"
                 onPress={beginTapRecording}
               >
-                <span className="text-xs font-medium leading-none"><Mic /></span>
+                <MicIcon className="size-4" strokeWidth={2} />
               </Button>
             </div>
           ) : (
