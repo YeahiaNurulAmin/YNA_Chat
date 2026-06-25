@@ -31,9 +31,16 @@ function buildUserPayload(clerkUser) {
 export async function upsertUserFromPayload(payload) {
   const existingByEmail = await User.findOne({ email: payload.email });
   if (existingByEmail) {
-    return User.findOneAndUpdate({ _id: existingByEmail._id }, payload, {
-      returnDocument: "after",
-    });
+    try {
+      return await User.findOneAndUpdate({ _id: existingByEmail._id }, payload, {
+        returnDocument: "after",
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        return existingByEmail;
+      }
+      throw error;
+    }
   }
 
   try {

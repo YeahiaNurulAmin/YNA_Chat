@@ -6,6 +6,7 @@ import AuthPage from "./pages/AuthPage";
 import { useAuth } from "@clerk/react";
 import PageLoader from "./components/PageLoader";
 import { useAuthStore } from "./store/useAuthStore";
+import { useChatStore } from "./store/useChatStore";
 import { useEffect } from "react";
 
 import { Toaster } from "react-hot-toast";
@@ -21,6 +22,7 @@ function App() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const socket = useAuthStore((state) => state.socket);
 
   useEffect(() => {
     setAuthTokenGetter(getToken);
@@ -33,6 +35,27 @@ function App() {
     if (isSignedIn) checkAuth();
     else clearAuth();
   }, [checkAuth, clearAuth, isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingMessage = (message) => {
+      useChatStore.getState().handleIncomingMessage(message);
+    };
+
+    socket.on("newMessage", handleIncomingMessage);
+
+    const handleMessageDeleted = (payload) => {
+      useChatStore.getState().handleMessageDeleted(payload);
+    };
+
+    socket.on("messageDeleted", handleMessageDeleted);
+
+    return () => {
+      socket.off("newMessage", handleIncomingMessage);
+      socket.off("messageDeleted", handleMessageDeleted);
+    };
+  }, [socket]);
 
   if (!isLoaded || (isSignedIn && isCheckingAuth)) return <PageLoader />;
 

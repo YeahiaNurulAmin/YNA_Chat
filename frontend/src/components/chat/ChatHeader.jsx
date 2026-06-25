@@ -1,5 +1,5 @@
 import { Avatar, Button } from "@heroui/react";
-import { ChevronLeftIcon, Volume2Icon, VolumeXIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, BellIcon, BellOffIcon, Volume2Icon, VolumeXIcon, XIcon } from "lucide-react";
 import { AppLogo } from "../AppLogo";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
@@ -12,9 +12,13 @@ import { useChatStore } from "../../store/useChatStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
 export function ChatHeader() {
-  const isSoundEnabled = useChatStore((state) => state.isSoundEnabled);
+  const isKeyboardSoundEnabled = useChatStore((state) => state.isKeyboardSoundEnabled);
+  const isNotificationSoundEnabled = useChatStore((state) => state.isNotificationSoundEnabled);
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
-  const setSoundEnabled = useChatStore((state) => state.setSoundEnabled);
+  const setKeyboardSoundEnabled = useChatStore((state) => state.setKeyboardSoundEnabled);
+  const setNotificationAlertsEnabled = useChatStore(
+    (state) => state.setNotificationAlertsEnabled,
+  );
 
   const { activeConversation, isLargeScreen } = useSelectedConversation();
 
@@ -81,10 +85,33 @@ export function ChatHeader() {
           size="sm"
           isIconOnly
           className="shrink-0"
-          aria-pressed={isSoundEnabled}
-          onPress={() => setSoundEnabled(!isSoundEnabled)}
+          aria-pressed={isNotificationSoundEnabled}
+          aria-label={
+            isNotificationSoundEnabled
+              ? "Disable notification sounds"
+              : "Enable notification sounds"
+          }
+          onPress={() => setNotificationAlertsEnabled(!isNotificationSoundEnabled)}
         >
-          {isSoundEnabled ? (
+          {isNotificationSoundEnabled ? (
+            <BellIcon className="size-5.5" strokeWidth={2} aria-hidden />
+          ) : (
+            <BellOffIcon className="size-5.5" strokeWidth={2} aria-hidden />
+          )}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          isIconOnly
+          className="shrink-0"
+          aria-pressed={isKeyboardSoundEnabled}
+          aria-label={
+            isKeyboardSoundEnabled ? "Disable keyboard sounds" : "Enable keyboard sounds"
+          }
+          onPress={() => setKeyboardSoundEnabled(!isKeyboardSoundEnabled)}
+        >
+          {isKeyboardSoundEnabled ? (
             <Volume2Icon className="size-5.5" strokeWidth={2} aria-hidden />
           ) : (
             <VolumeXIcon className="size-5.5" strokeWidth={2} aria-hidden />

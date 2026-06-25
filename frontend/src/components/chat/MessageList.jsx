@@ -27,7 +27,11 @@ export function MessageList({ displayMessages }) {
             item.kind === "liveLocationGroup" ? (
               <LiveLocationGroup key={item.id} group={item} />
             ) : (
-              <MessageBubble key={item.id} message={item} />
+              <MessageBubble
+                key={item.id}
+                message={item}
+                peerName={activeConversation.peer.name}
+              />
             ),
           )}
         </div>

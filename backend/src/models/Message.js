@@ -49,6 +49,22 @@ const messageSchema = new mongoose.Schema(
     liveSessionId: {
       type: String,
     },
+    readAt: {
+      type: Date,
+      default: null,
+    },
+    replyTo: {
+      messageId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message",
+      },
+      text: {
+        type: String,
+      },
+      senderName: {
+        type: String,
+      },
+    },
   },
   { timestamps: true }
 );

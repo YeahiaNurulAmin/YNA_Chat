@@ -39,7 +39,7 @@ export class LocationService {
   }
 
   enrichLocationLinks(location) {
-    if (!location?.latitude || !location?.longitude) return location;
+    if (location?.latitude == null || location?.longitude == null) return location;
 
     return {
       ...location,

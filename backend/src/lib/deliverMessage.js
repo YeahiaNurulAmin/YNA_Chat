@@ -1,12 +1,36 @@
 import { getReceiverSocketId, io } from "./socket.js";
 
 export async function deliverMessage(messageDoc, receiverId) {
-  await messageDoc.save();
+  const saved = await messageDoc.save();
+  const payload = typeof saved.toObject === "function" ? saved.toObject() : saved;
 
-  const receiverSocketId = getReceiverSocketId(receiverId);
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("newMessage", messageDoc);
+  try {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", payload);
+    }
+  } catch (error) {
+    console.error("Socket delivery failed:", error.message);
   }
 
-  return messageDoc;
+  return saved;
+}
+
+export function emitMessageDeleted({ messageId, senderId, receiverId }) {
+  const payload = { messageId: String(messageId) };
+
+  try {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    const senderSocketId = getReceiverSocketId(senderId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("messageDeleted", payload);
+    }
+
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messageDeleted", payload);
+    }
+  } catch (error) {
+    console.error("Socket delete notification failed:", error.message);
+  }
 }

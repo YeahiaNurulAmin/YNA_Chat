@@ -1,6 +1,8 @@
 import { getInitials, useSelectedConversation } from "../../hooks/useSelectedConversation";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useChatStore } from "../../store/useChatStore";
+import { getMessagePreview } from "../../lib/messagePreview";
+import { formatMessageTime } from "../../lib/utils";
 import { APP_NAME, AppLogo } from "../AppLogo";
 import { UserButton } from "@clerk/react";
 
@@ -8,28 +10,46 @@ import { SearchField, Tabs } from "@heroui/react";
 import { MessageSquareIcon, UsersIcon } from "lucide-react";
 import { ConversationRow } from "./ConversationRow";
 
-function mapUserForList(user, onlineUsers) {
+function mapUserForList(user, onlineUsers, { unreadCounts = {}, conversationMeta = {} } = {}) {
+  const id = String(user._id);
+  const meta = conversationMeta[id];
+  const unreadCount = unreadCounts[id] ?? meta?.unreadCount ?? 0;
+  const lastMessage = meta?.lastMessage;
+
   return {
     conversationId: user._id,
     id: user._id,
     name: user.fullName,
-    avatarUrl: user.profilePic,
+    avatarUrl: user.profilePic ?? user.profilePicture,
     initials: getInitials(user.fullName),
     isOnline: onlineUsers.includes(user._id),
+    unreadCount,
+    lastMessagePreview: lastMessage ? getMessagePreview(lastMessage) : "",
+    lastMessageAt: lastMessage?.createdAt ? formatMessageTime(lastMessage.createdAt) : "",
     peer: {
       name: user.fullName,
-      avatarUrl: user.profilePic,
+      avatarUrl: user.profilePic ?? user.profilePicture,
       initials: getInitials(user.fullName),
       isOnline: onlineUsers.includes(user._id),
     },
   };
 }
 
+function buildConversationMeta(conversations) {
+  const conversationMeta = {};
+  for (const conversation of conversations) {
+    conversationMeta[String(conversation._id)] = {
+      unreadCount: conversation.unreadCount ?? 0,
+      lastMessage: conversation.lastMessage,
+    };
+  }
+  return conversationMeta;
+}
+
 function ChatSidebar() {
   const conversations = useChatStore((state) => state.conversations);
-
-  console.log(conversations);
   const users = useChatStore((state) => state.users);
+  const unreadCounts = useChatStore((state) => state.unreadCounts);
 
   const searchQuery = useChatStore((state) => state.searchQuery);
   const setSearchQuery = useChatStore((state) => state.setSearchQuery);
@@ -44,9 +64,13 @@ function ChatSidebar() {
   const { activeConversationId, isLargeScreen } = useSelectedConversation();
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const conversationMeta = buildConversationMeta(conversations);
+  const listOptions = { unreadCounts, conversationMeta };
 
-  const conversationUsers = conversations.map((user) => mapUserForList(user, onlineUsers));
-  const allUsers = users.map((user) => mapUserForList(user, onlineUsers));
+  const conversationUsers = conversations.map((user) =>
+    mapUserForList(user, onlineUsers, listOptions),
+  );
+  const allUsers = users.map((user) => mapUserForList(user, onlineUsers, listOptions));
 
   const filteredConversations = normalizedSearchQuery
     ? conversationUsers.filter((conversation) =>
@@ -130,6 +154,9 @@ function ChatSidebar() {
                 user={conversation}
                 selected={conversation.id === activeConversationId}
                 onSelect={() => setActiveConversationId(conversation.id)}
+                unreadCount={conversation.unreadCount}
+                lastMessagePreview={conversation.lastMessagePreview}
+                lastMessageAt={conversation.lastMessageAt}
               />
             ))
           )}
@@ -145,6 +172,9 @@ function ChatSidebar() {
                 user={user}
                 selected={user.conversationId === activeConversationId}
                 onSelect={() => setActiveConversationId(user.conversationId)}
+                unreadCount={user.unreadCount}
+                lastMessagePreview={user.lastMessagePreview}
+                lastMessageAt={user.lastMessageAt}
               />
             ))
           )}

@@ -3,6 +3,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useSelectedConversation } from "../hooks/useSelectedConversation";
 import { useEffect } from "react";
 import { fetchLocationConfig } from "../lib/locationApi";
+import { useUnreadDocumentTitle } from "../hooks/useUnreadDocumentTitle";
 import ChatSidebar from "../components/chat/ChatSidebar";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { MessageList } from "../components/chat/MessageList";
@@ -14,10 +15,11 @@ function ChatPage() {
   const getConversations = useChatStore((state) => state.getConversations);
   const getMessages = useChatStore((state) => state.getMessages);
   const getUsers = useChatStore((state) => state.getUsers);
-  const subscribeToMessages = useChatStore((state) => state.subscribeToMessages);
-  const unsubscribeFromMessages = useChatStore((state) => state.unsubscribeFromMessages);
+  const markConversationRead = useChatStore((state) => state.markConversationRead);
 
   const { activeConversation, activeConversationId, isLargeScreen } = useSelectedConversation();
+
+  useUnreadDocumentTitle();
 
   useEffect(() => {
     getUsers();
@@ -29,11 +31,8 @@ function ChatPage() {
     if (!activeConversationId) return;
 
     getMessages(activeConversationId);
-    subscribeToMessages(activeConversationId);
-
-    // cleanup
-    return () => unsubscribeFromMessages();
-  }, [getMessages, activeConversationId, subscribeToMessages, unsubscribeFromMessages]);
+    markConversationRead(activeConversationId);
+  }, [getMessages, activeConversationId, markConversationRead]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden p-2 sm:p-3 md:p-8" style={frameStyle}>

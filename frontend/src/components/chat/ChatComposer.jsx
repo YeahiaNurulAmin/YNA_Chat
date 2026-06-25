@@ -43,13 +43,16 @@ function formatElapsedTime(startedAt) {
 
 export function ChatComposer() {
   const composerText = useChatStore((state) => state.composerText);
-  const isSoundEnabled = useChatStore((state) => state.isSoundEnabled);
+  const isKeyboardSoundEnabled = useChatStore((state) => state.isKeyboardSoundEnabled);
   const sendMediaMessage = useChatStore((state) => state.sendMediaMessage);
   const sendVoiceMessage = useChatStore((state) => state.sendVoiceMessage);
   const sendLocationMessage = useChatStore((state) => state.sendLocationMessage);
   const isSendingMedia = useChatStore((state) => state.isSendingMedia);
   const isSendingLocation = useChatStore((state) => state.isSendingLocation);
   const sendTextMessage = useChatStore((state) => state.sendTextMessage);
+  const isSendingText = useChatStore((state) => state.isSendingText);
+  const replyingTo = useChatStore((state) => state.replyingTo);
+  const clearReplyingTo = useChatStore((state) => state.clearReplyingTo);
   const setComposerText = useChatStore((state) => state.setComposerText);
   const { activeConversationId } = useSelectedConversation();
   const { playRandomKeyStrokeSound } = useKeyboardSound();
@@ -99,7 +102,7 @@ export function ChatComposer() {
   void elapsedTick;
 
   const playSoundIfEnabled = () => {
-    if (isSoundEnabled) playRandomKeyStrokeSound();
+    if (isKeyboardSoundEnabled) playRandomKeyStrokeSound();
   };
 
   const clearVoicePreview = useCallback(() => {
@@ -159,6 +162,8 @@ export function ChatComposer() {
   );
 
   const handleSend = async () => {
+    if (isSendingText || !hasText) return;
+
     const didSendMessage = await sendTextMessage(activeConversationId);
     if (didSendMessage) playSoundIfEnabled();
   };
@@ -322,7 +327,8 @@ export function ChatComposer() {
     void stopRecording();
     setIsEmergencyModalOpen(false);
     setIsLocationPickerOpen(false);
-  }, [activeConversationId, cancelRecording, resetVoiceSession, stopRecording]);
+    clearReplyingTo();
+  }, [activeConversationId, cancelRecording, clearReplyingTo, resetVoiceSession, stopRecording]);
 
   useEffect(() => {
     if (!isEmergencyActive || !emergencyStartedAt) return undefined;
@@ -497,7 +503,29 @@ export function ChatComposer() {
           </div>
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-full items-end gap-1.5 px-0.5 sm:gap-2 sm:px-1">
+        <div className="mx-auto flex w-full max-w-full flex-col gap-2">
+          {replyingTo ? (
+            <div className="flex items-start justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-accent">
+                  Replying to {replyingTo.senderName}
+                </p>
+                <p className="truncate text-sm text-muted">{replyingTo.text}</p>
+              </div>
+              <Button
+                variant="ghost"
+                isIconOnly
+                size="sm"
+                aria-label="Cancel reply"
+                className="size-8 shrink-0 text-muted"
+                onPress={clearReplyingTo}
+              >
+                <XIcon className="size-4" strokeWidth={2} />
+              </Button>
+            </div>
+          ) : null}
+
+          <div className="mx-auto flex w-full max-w-full items-end gap-1.5 px-0.5 sm:gap-2 sm:px-1">
           <input
             ref={mediaInputRef}
             type="file"
@@ -553,11 +581,12 @@ export function ChatComposer() {
             placeholder="YNA Chat"
             rows={1}
             value={composerText}
+            isDisabled={isSendingText}
             onChange={handleComposerTextChange}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                handleSend();
+                void handleSend();
               }
             }}
             className="flex-1 rounded-full"
@@ -576,10 +605,21 @@ export function ChatComposer() {
               </Button>
             </div>
           ) : (
-            <Button variant="primary" isIconOnly isDisabled={!hasText} onPress={handleSend}>
-              <SendHorizontalIcon className="size-5" />
+            <Button
+              variant="primary"
+              isIconOnly
+              isDisabled={!hasText || isSendingText}
+              aria-label={isSendingText ? "Sending message" : "Send message"}
+              onPress={() => void handleSend()}
+            >
+              {isSendingText ? (
+                <LoaderIcon className="size-5 animate-spin" strokeWidth={2} aria-hidden />
+              ) : (
+                <SendHorizontalIcon className="size-5" />
+              )}
             </Button>
           )}
+          </div>
         </div>
       )}
     </footer>

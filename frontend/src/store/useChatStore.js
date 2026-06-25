@@ -9,8 +9,27 @@ import {
   startLiveLocationSession as apiStartLiveLocation,
   stopLiveLocationSession as apiStopLiveLocation,
 } from "../lib/locationApi";
+import { requestNotificationPermission, showBrowserNotification } from "../lib/browserNotifications";
+import { getMessagePreview } from "../lib/messagePreview";
+import { playMessageSound } from "../hooks/useMessageSound";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
+
+const LIVE_LOCATION_NOTIFY_THROTTLE_MS = 30000;
+const MARK_READ_DEBOUNCE_MS = 1000;
+
+let markReadDebounceTimer = null;
+
+function buildUnreadCountsFromConversations(conversations) {
+  const unreadCounts = {};
+  for (const conversation of conversations) {
+    const count = conversation.unreadCount ?? 0;
+    if (count > 0) {
+      unreadCounts[String(conversation._id)] = count;
+    }
+  }
+  return unreadCounts;
+}
 
 export const useChatStore = create(
   persist(
@@ -26,10 +45,17 @@ export const useChatStore = create(
       searchQuery: "",
       sidebarTab: "chats",
       composerText: "",
-      isSoundEnabled: true,
+      isKeyboardSoundEnabled: true,
+      isNotificationSoundEnabled: true,
+      areBrowserNotificationsEnabled: false,
       isSendingMedia: false,
+      isSendingText: false,
+      isForwardingMessage: false,
       isSendingLocation: false,
       emergencyLocationSession: null,
+      unreadCounts: {},
+      liveLocationNotifyState: null,
+      replyingTo: null,
 
       getUsers: async () => {
         set({ isUsersLoading: true });
@@ -54,7 +80,10 @@ export const useChatStore = create(
         set({ isConversationsLoading: true });
         try {
           const res = await axiosInstance.get("/messages/conversations");
-          set({ conversations: res.data });
+          set({
+            conversations: res.data,
+            unreadCounts: buildUnreadCountsFromConversations(res.data),
+          });
         } catch (error) {
           toast.error(error.response?.data?.message || "Failed to load conversations");
           console.log("Error in getConversations", error.message);
@@ -77,7 +106,7 @@ export const useChatStore = create(
       },
 
       sendMessage: async (messageData) => {
-        const { selectedUser, messages } = get();
+        const { selectedUser } = get();
         if (!selectedUser) return false;
 
         const isFormData = messageData instanceof FormData;
@@ -104,8 +133,10 @@ export const useChatStore = create(
         try {
           const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
           set({
-            messages: [...messages, res.data],
-            ...(shouldClearComposer ? { composerText: "" } : {}),
+            messages: [...get().messages, res.data],
+            ...(shouldClearComposer && get().composerText.trim() === messageData.text?.trim()
+              ? { composerText: "", replyingTo: null }
+              : {}),
           });
           get().getConversations();
           return true;
@@ -115,26 +146,165 @@ export const useChatStore = create(
         }
       },
 
-      subscribeToMessages: (userId) => {
-        if (!userId) return;
-
-        const socket = useAuthStore.getState().socket;
-        if (!socket) return;
-
-        socket.off("newMessage");
-        socket.on("newMessage", (newMessage) => {
-          // if im not the receiver don't do anything just return
-          if (String(newMessage.senderId) !== String(userId)) return;
-
-          set({ messages: [...get().messages, newMessage] });
-
-          get().getConversations();
-        });
+      findUserById: (userId) => {
+        const id = String(userId);
+        const { users, conversations } = get();
+        return (
+          users.find((user) => String(user._id) === id) ||
+          conversations.find((user) => String(user._id) === id) ||
+          null
+        );
       },
 
-      unsubscribeFromMessages: () => {
-        const socket = useAuthStore.getState().socket;
-        socket?.off("newMessage");
+      shouldNotifyForMessage: (message) => {
+        if (!message.isLiveLocation || !message.liveSessionId) {
+          return true;
+        }
+
+        const sessionId = message.liveSessionId;
+        const now = Date.now();
+        const { liveLocationNotifyState } = get();
+
+        if (
+          liveLocationNotifyState?.sessionId === sessionId &&
+          now - liveLocationNotifyState.timestamp < LIVE_LOCATION_NOTIFY_THROTTLE_MS
+        ) {
+          return false;
+        }
+
+        set({ liveLocationNotifyState: { sessionId, timestamp: now } });
+        return true;
+      },
+
+      triggerMessageAlerts: (message) => {
+        const senderId = String(message.senderId);
+        const sender = get().findUserById(senderId);
+        const senderName = sender?.fullName ?? "New message";
+        const preview = getMessagePreview(message);
+
+        toast(`${senderName}: ${preview}`, {
+          id: message.isLiveLocation ? `live-${message.liveSessionId}` : `msg-${message._id}`,
+        });
+
+        if (get().isNotificationSoundEnabled) {
+          playMessageSound();
+        }
+
+        if (
+          get().areBrowserNotificationsEnabled &&
+          document.hidden &&
+          typeof Notification !== "undefined" &&
+          Notification.permission === "granted"
+        ) {
+          showBrowserNotification({
+            title: senderName,
+            body: preview,
+            icon: sender?.profilePic ?? sender?.profilePicture,
+            onClick: () => get().setActiveConversationId(senderId),
+          });
+        }
+      },
+
+      handleIncomingMessage: (newMessage) => {
+        const authUser = useAuthStore.getState().authUser;
+        if (!authUser) return;
+        if (String(newMessage.receiverId) !== String(authUser._id)) return;
+
+        const senderId = String(newMessage.senderId);
+        const { activeConversationId, messages } = get();
+        const isActiveChat = senderId === String(activeConversationId);
+
+        if (isActiveChat) {
+          set({ messages: [...messages, newMessage] });
+          get().scheduleMarkConversationRead(senderId);
+          get().getConversations();
+          return;
+        }
+
+        const unreadCounts = { ...get().unreadCounts };
+        unreadCounts[senderId] = (unreadCounts[senderId] ?? 0) + 1;
+        set({ unreadCounts });
+
+        if (get().shouldNotifyForMessage(newMessage)) {
+          get().triggerMessageAlerts(newMessage);
+        }
+
+        get().getConversations();
+      },
+
+      handleMessageDeleted: ({ messageId }) => {
+        if (!messageId) return;
+
+        const id = String(messageId);
+        set({
+          messages: get().messages.filter((message) => String(message._id) !== id),
+        });
+        get().getConversations();
+      },
+
+      setReplyingTo: (replyingTo) => set({ replyingTo }),
+
+      clearReplyingTo: () => set({ replyingTo: null }),
+
+      deleteMessage: async (messageId) => {
+        if (!messageId) return false;
+
+        try {
+          await axiosInstance.delete(`/messages/item/${messageId}`);
+          get().handleMessageDeleted({ messageId });
+          toast.success("Message deleted");
+          return true;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to delete message");
+          return false;
+        }
+      },
+
+      forwardMessage: async ({ messageId, receiverId }) => {
+        if (!messageId || !receiverId) return false;
+
+        set({ isForwardingMessage: true });
+        try {
+          await axiosInstance.post(`/messages/forward/${messageId}`, { receiverId });
+          toast.success("Message forwarded");
+          return true;
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Failed to forward message");
+          return false;
+        } finally {
+          set({ isForwardingMessage: false });
+        }
+      },
+
+      markConversationRead: async (peerId) => {
+        if (!peerId) return;
+
+        const peerKey = String(peerId);
+        const unreadCounts = { ...get().unreadCounts };
+        delete unreadCounts[peerKey];
+        set({ unreadCounts });
+
+        try {
+          await axiosInstance.patch(`/messages/read/${peerId}`);
+          get().getConversations();
+        } catch (error) {
+          console.error("Failed to mark conversation as read", error);
+        }
+      },
+
+      scheduleMarkConversationRead: (peerId) => {
+        if (!peerId) return;
+
+        if (markReadDebounceTimer) {
+          clearTimeout(markReadDebounceTimer);
+        }
+
+        markReadDebounceTimer = setTimeout(() => {
+          markReadDebounceTimer = null;
+          axiosInstance.patch(`/messages/read/${peerId}`).catch((error) => {
+            console.error("Failed to mark conversation as read", error);
+          });
+        }, MARK_READ_DEBOUNCE_MS);
       },
 
       setSelectedUser: (selectedUser) => set({ selectedUser }),
@@ -153,13 +323,64 @@ export const useChatStore = create(
       setSearchQuery: (searchQuery) => set({ searchQuery }),
       setSidebarTab: (sidebarTab) => set({ sidebarTab }),
       setComposerText: (composerText) => set({ composerText }),
-      setSoundEnabled: (isSoundEnabled) => set({ isSoundEnabled }),
+      setKeyboardSoundEnabled: (isKeyboardSoundEnabled) => set({ isKeyboardSoundEnabled }),
+
+      setNotificationAlertsEnabled: async (enabled) => {
+        if (enabled) {
+          const permission = await requestNotificationPermission();
+          set({
+            isNotificationSoundEnabled: true,
+            areBrowserNotificationsEnabled: permission === "granted",
+          });
+
+          if (permission !== "granted") {
+            toast.error("Browser notifications were not allowed");
+          }
+
+          return;
+        }
+
+        set({
+          isNotificationSoundEnabled: false,
+          areBrowserNotificationsEnabled: false,
+        });
+      },
 
       sendTextMessage: async (conversationId) => {
+        if (get().isSendingText) return false;
+
         const messageText = get().composerText.trim();
         if (!conversationId || !messageText) return false;
 
-        return get().sendMessage({ text: messageText });
+        const { replyingTo } = get();
+        const payload = {
+          text: messageText,
+          ...(replyingTo
+            ? {
+                replyTo: {
+                  messageId: replyingTo.messageId,
+                  text: replyingTo.text,
+                  senderName: replyingTo.senderName,
+                },
+              }
+            : {}),
+        };
+
+        set({ isSendingText: true, composerText: "" });
+
+        try {
+          const didSend = await get().sendMessage(payload);
+
+          if (!didSend) {
+            set({ composerText: messageText });
+          } else if (replyingTo) {
+            set({ replyingTo: null });
+          }
+
+          return didSend;
+        } finally {
+          set({ isSendingText: false });
+        }
       },
 
       sendMediaMessage: async ({ conversationId, files }) => {
@@ -280,7 +501,23 @@ export const useChatStore = create(
     }),
     {
       name: "ynachat-storage",
-      partialize: (state) => ({ isSoundEnabled: state.isSoundEnabled }),
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState ?? {};
+
+        return {
+          ...state,
+          isKeyboardSoundEnabled:
+            state.isKeyboardSoundEnabled ?? state.isSoundEnabled ?? true,
+          isNotificationSoundEnabled: state.isNotificationSoundEnabled ?? true,
+          areBrowserNotificationsEnabled: state.areBrowserNotificationsEnabled ?? false,
+        };
+      },
+      partialize: (state) => ({
+        isKeyboardSoundEnabled: state.isKeyboardSoundEnabled,
+        isNotificationSoundEnabled: state.isNotificationSoundEnabled,
+        areBrowserNotificationsEnabled: state.areBrowserNotificationsEnabled,
+      }),
     },
   ),
 );

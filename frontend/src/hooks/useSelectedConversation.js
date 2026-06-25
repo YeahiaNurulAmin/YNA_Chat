@@ -36,6 +36,7 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
     location: message.location ?? null,
     isLiveLocation: message.isLiveLocation ?? false,
     liveSessionId: message.liveSessionId ?? null,
+    replyTo: message.replyTo ?? null,
   }));
 
   return {
@@ -44,7 +45,7 @@ function mapUserToConversation({ user, messages, authUser, onlineUsers }) {
       name: user.fullName,
       subtitle: user.email,
       isOnline: onlineUsers.includes(user._id),
-      avatarUrl: user.profilePic,
+      avatarUrl: user.profilePic ?? user.profilePicture,
       initials: getInitials(user.fullName),
     },
     messages: groupMessagesForDisplay(mappedMessages),
