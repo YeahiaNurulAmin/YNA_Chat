@@ -82,11 +82,13 @@ function ChatSidebar() {
     ? allUsers.filter((user) => user.name.toLowerCase().includes(normalizedSearchQuery))
     : allUsers;
 
+  const roundedClass = isLargeScreen ? "rounded-tl-[21px]" : "rounded-t-[21px]";
+
   return (
     <aside
       className={`w-full shrink-0 flex-col overflow-hidden border-r border-border lg:w-72 ${
         !isLargeScreen && activeConversationId ? "hidden lg:flex" : "flex"
-      }`}
+      } ${roundedClass}`}
     >
       <div className="shrink-0 border-b border-border px-2 pb-2 pt-2.5 sm:px-3 sm:pt-3">
         <div className="flex items-center gap-2 px-0.5 sm:gap-2.5 sm:px-1">

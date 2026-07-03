@@ -1,4 +1,4 @@
-import { useWallpaper } from "../context/wallpaper";
+import { useRgb } from "../context/RgbContext";
 import { useChatStore } from "../store/useChatStore";
 import { useSelectedConversation } from "../hooks/useSelectedConversation";
 import { useEffect } from "react";
@@ -10,7 +10,7 @@ import { MessageList } from "../components/chat/MessageList";
 import { ChatComposer } from "../components/chat/ChatComposer";
 
 function ChatPage() {
-  const { frameStyle } = useWallpaper();
+  const { rgbStyle, showGlow } = useRgb();
 
   const getConversations = useChatStore((state) => state.getConversations);
   const getMessages = useChatStore((state) => state.getMessages);
@@ -35,19 +35,22 @@ function ChatPage() {
   }, [getMessages, activeConversationId, markConversationRead]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden p-2 sm:p-3 md:p-8" style={frameStyle}>
-      <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden rounded-2xl border border-border bg-background text-foreground">
-        <ChatSidebar />
+    <div className="flex h-dvh flex-col overflow-hidden p-0 bg-[#09090b] relative select-none">
+      <div className="relative flex w-full flex-1 rounded-3xl p-[3px] overflow-hidden rgb-border-glow shadow-2xl" style={rgbStyle}>
+        {showGlow && <div className="rgb-backdrop-glow" />}
+        <div className="relative flex w-full flex-1 overflow-hidden rounded-[21px] bg-background text-foreground z-10 border border-border/30">
+          <ChatSidebar />
 
-        <div
-          className={`flex-1 flex-col overflow-hidden ${
-            !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
-          }`}
-        >
-          <ChatHeader />
-          <MessageList displayMessages={activeConversation?.messages} />
+          <div
+            className={`flex-1 flex-col overflow-hidden ${
+              !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
+            }`}
+          >
+            <ChatHeader />
+            <MessageList displayMessages={activeConversation?.messages} />
 
-          {activeConversation ? <ChatComposer /> : null}
+            {activeConversation ? <ChatComposer /> : null}
+          </div>
         </div>
       </div>
     </div>

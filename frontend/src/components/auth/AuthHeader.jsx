@@ -1,11 +1,11 @@
 import { APP_NAME, AppLogo } from "../AppLogo";
 import { ThemePresetPicker } from "../ThemePresetPicker";
 import { ThemeToggle } from "../ThemeToggle";
-import { WallpaperPicker } from "../WallpaperPicker";
+import { RgbCustomizer } from "../RgbCustomizer";
 
 function AuthHeader() {
   return (
-    <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-black/10 bg-[#F6F6F6]/95 px-3 py-2 backdrop-blur-md dark:border-white/10 dark:bg-[#1C1C1E]/95">
+    <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-black/10 bg-[#F6F6F6]/95 px-3 py-2 backdrop-blur-md dark:border-white/10 dark:bg-[#1C1C1E]/95 rounded-t-[21px]">
       <div className="flex flex-1 items-center gap-2.5 px-1">
         <AppLogo size={52} className="rounded-[7px]" alt="" />
 
@@ -16,7 +16,7 @@ function AuthHeader() {
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <WallpaperPicker />
+        <RgbCustomizer />
 
         <ThemePresetPicker />
 

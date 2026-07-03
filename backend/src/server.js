@@ -10,6 +10,7 @@ import clerkWebhookRouter from "./webhooks/clerkWebhookMiddleware.js";
 import authRouter from "./routes/authRoute.js";
 import messageRoute from "./routes/messageRoute.js";
 import locationRoute from "./routes/locationRoute.js";
+import callRoute from "./routes/callRoute.js";
 import { app, server, } from "./lib/socket.js";
 
 
@@ -43,6 +44,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/messages", messageRoute);
 app.use("/api/location", locationRoute);
+app.use("/api/calls", callRoute);
 
 
 if (fs.existsSync(PUBLIC_DIR)) {

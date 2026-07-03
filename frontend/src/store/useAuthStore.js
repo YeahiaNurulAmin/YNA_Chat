@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance, getAuthToken } from "../lib/axios";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 
@@ -34,10 +34,15 @@ export const useAuthStore = create((set, get) => ({
     get().disconnectSocket();
   },
 
-  connectSocket: (user) => {
+  connectSocket: async (user) => {
     if (!user || get().socket?.connected) return;
 
-    const socket = io(BASE_URL, { query: { userId: user._id } });
+    const token = await getAuthToken();
+    if (!token) return;
+
+    const socket = io(BASE_URL, {
+      auth: { token },
+    });
 
     set({ socket });
 

@@ -1,14 +1,15 @@
 import { Avatar, Button } from "@heroui/react";
-import { ChevronLeftIcon, BellIcon, BellOffIcon, Volume2Icon, VolumeXIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, BellIcon, BellOffIcon, PhoneIcon, Volume2Icon, VolumeXIcon, XIcon } from "lucide-react";
 import { AppLogo } from "../AppLogo";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
 import { ThemePresetPicker } from "../ThemePresetPicker";
 
 import { ThemeToggle } from "../ThemeToggle";
-import { WallpaperPicker } from "../WallpaperPicker";
+import { RgbCustomizer } from "../RgbCustomizer";
 
 import { useChatStore } from "../../store/useChatStore";
+import { useCallStore } from "../../store/useCallStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
 export function ChatHeader() {
@@ -21,9 +22,26 @@ export function ChatHeader() {
   );
 
   const { activeConversation, isLargeScreen } = useSelectedConversation();
+  const callStatus = useCallStore((state) => state.status);
+  const startCall = useCallStore((state) => state.startCall);
+
+  const canStartCall =
+    Boolean(activeConversation?.peer.isOnline) && callStatus === "idle";
+
+  const handleStartCall = () => {
+    if (!activeConversation || !canStartCall) return;
+    void startCall({
+      id: activeConversation.id,
+      name: activeConversation.peer.name,
+      avatarUrl: activeConversation.peer.avatarUrl,
+      initials: activeConversation.peer.initials,
+    });
+  };
+
+  const roundedClass = isLargeScreen ? "rounded-tr-[21px]" : "rounded-t-[21px]";
 
   return (
-    <header className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-1.5 py-1.5 sm:gap-2 sm:px-2 sm:py-2">
+    <header className={`sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-1.5 py-1.5 sm:gap-2 sm:px-2 sm:py-2 ${roundedClass}`}>
       {activeConversation && !isLargeScreen ? (
         <Button
           variant="ghost"
@@ -74,11 +92,25 @@ export function ChatHeader() {
 
       <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-0.5 sm:gap-1">
         <div className="hidden min-[400px]:contents">
-          <WallpaperPicker />
+          <RgbCustomizer />
           <ThemePresetPicker />
         </div>
 
         <ThemeToggle />
+
+        {activeConversation ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            isIconOnly
+            className="shrink-0"
+            isDisabled={!canStartCall}
+            aria-label="Start voice call"
+            onPress={handleStartCall}
+          >
+            <PhoneIcon className="size-5.5" strokeWidth={2} aria-hidden />
+          </Button>
+        ) : null}
 
         <Button
           variant="ghost"

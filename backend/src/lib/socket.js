@@ -1,41 +1,76 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-
+import { verifyToken } from "@clerk/backend";
+import { findOrSyncUser } from "./syncClerkUser.js";
+import {
+  endCallForUser,
+  registerCallSocketHandlers,
+} from "./callSignaling.js";
 
 const app = express();
-const server = http.createServer(app);// why we use this? because socket.io is a websocket library and it needs a http server to work and express is a web framework for node.js
+const server = http.createServer(app);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-//Need to check
 const io = new Server(server, {
-    cors: {
-        origin: FRONTEND_URL,
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true,
-    },
+  cors: {
+    origin: FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  },
 });
 
-const userSocketMap = {};// This is a map of user id to socket id this how it looks like { userId: socketId } = { "666666666666666666666666": "1234567890" }
+const userSocketMap = {};
 
-    io.on("connection", (socket) => { // from where getting this socket? from the client side when the client connects to the server
-    const userId = socket.handshake.query.userId;
-
-    if (userId) {
-        userSocketMap[userId] = socket.id;
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      next(new Error("Unauthorized"));
+      return;
     }
 
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));// waht emit does? it emits the online users to all connected clients(all users) by giving it users ids array
-
-    socket.on("disconnect", () => {
-        delete userSocketMap[userId];// delete the user from the map
-        io.emit("getOnlineUsers", Object.keys(userSocketMap)); //
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
     });
+
+    if (!payload?.sub) {
+      next(new Error("Unauthorized"));
+      return;
+    }
+
+    const user = await findOrSyncUser(payload.sub);
+    if (!user) {
+      next(new Error("User not synced"));
+      return;
+    }
+
+    socket.data.userId = String(user._id);
+    next();
+  } catch (error) {
+    console.error("Socket auth failed:", error.message);
+    next(new Error("Unauthorized"));
+  }
+});
+
+io.on("connection", (socket) => {
+  const userId = socket.data.userId;
+
+  userSocketMap[userId] = socket.id;
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  registerCallSocketHandlers(socket, io, getReceiverSocketId);
+
+  socket.on("disconnect", () => {
+    delete userSocketMap[userId];
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    void endCallForUser(io, getReceiverSocketId, userId, "disconnected");
+  });
 });
 
 const getReceiverSocketId = (receiverId) => {
-    return userSocketMap[String(receiverId)];
+  return userSocketMap[String(receiverId)];
 };
 
 export { app, server, io, getReceiverSocketId };
