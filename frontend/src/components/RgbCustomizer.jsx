@@ -18,15 +18,15 @@ export function RgbCustomizer() {
     <Modal.Root state={modal}>
       <Modal.Trigger>
         <Button variant="ghost" size="sm" isIconOnly className="text-foreground">
-          <Sparkles className="size-5 text-zinc-400 hover:text-white" />
+          <Sparkles className="size-5 text-accent" />
         </Button>
       </Modal.Trigger>
 
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="md" scroll="inside" placement="center">
-          <Modal.Dialog className="max-h-[85dvh] border border-white/10 bg-[#2a2a2c] text-foreground shadow-2xl">
-            <Modal.Header className="flex flex-row items-center justify-between gap-3 border-b border-white/10 pb-3">
-              <Modal.Heading className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+          <Modal.Dialog className="glass-modal max-h-[85dvh] text-foreground shadow-2xl">
+            <Modal.Header className="rgb-accent-line flex flex-row items-center justify-between gap-3 border-b border-white/8 pb-3">
+              <Modal.Heading className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
                 <Sparkles className="size-5 text-accent" />
                 RGB Glow Settings
               </Modal.Heading>
@@ -36,8 +36,8 @@ export function RgbCustomizer() {
             <Modal.Body className="isolate space-y-6 pt-4 pb-6">
               {/* Presets section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-zinc-300">Glow Preset</h3>
-                <p className="text-xs text-zinc-400">
+                <h3 className="text-sm font-semibold text-foreground/90">Glow Preset</h3>
+                <p className="text-xs text-muted">
                   Select a multi-color gradient theme for the outer border and glow:
                 </p>
                 <div className="grid grid-cols-3 gap-3 pt-1">
@@ -51,7 +51,7 @@ export function RgbCustomizer() {
                         className={[
                           "relative flex flex-col items-center gap-2 rounded-xl p-2.5 text-center transition-all duration-200 outline-none cursor-pointer",
                           selected
-                            ? "bg-white/10 ring-2 ring-accent ring-offset-2 ring-offset-[#2a2a2c]"
+                            ? "bg-accent/15 ring-2 ring-accent ring-offset-2 ring-offset-[#1a1a1e]"
                             : "hover:bg-white/5",
                         ].join(" ")}
                         aria-pressed={selected}
@@ -71,7 +71,7 @@ export function RgbCustomizer() {
                         <span
                           className={[
                             "text-[11px] font-medium leading-tight truncate max-w-full",
-                            selected ? "text-white" : "text-zinc-400",
+                            selected ? "text-foreground" : "text-muted",
                           ].join(" ")}
                         >
                           {p.label}
@@ -84,7 +84,7 @@ export function RgbCustomizer() {
 
               {/* Speed Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-zinc-300">Animation Speed</h3>
+                <h3 className="text-sm font-semibold text-foreground/90">Animation Speed</h3>
                 <div className="flex gap-2">
                   {RGB_SPEEDS.map((s) => {
                     const selected = speed === s.id;
@@ -95,7 +95,7 @@ export function RgbCustomizer() {
                         variant={selected ? "solid" : "bordered"}
                         color={selected ? "primary" : "default"}
                         className={[
-                          "flex-1 border-white/10 text-white font-medium text-xs rounded-lg transition-colors cursor-pointer",
+                          "flex-1 rounded-lg border-white/10 text-xs font-medium text-foreground transition-colors cursor-pointer",
                           selected ? "bg-accent text-accent-foreground" : "hover:bg-white/5"
                         ].join(" ")}
                         onClick={() => setSpeed(s.id)}
@@ -109,7 +109,7 @@ export function RgbCustomizer() {
 
               {/* Glow Intensity Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-zinc-300">Ambient Glow</h3>
+                <h3 className="text-sm font-semibold text-foreground/90">Ambient Glow</h3>
                 <div className="flex gap-2">
                   {RGB_INTENSITIES.map((i) => {
                     const selected = glowIntensity === i.id;
@@ -120,7 +120,7 @@ export function RgbCustomizer() {
                         variant={selected ? "solid" : "bordered"}
                         color={selected ? "primary" : "default"}
                         className={[
-                          "flex-1 border-white/10 text-white font-medium text-xs rounded-lg transition-colors cursor-pointer",
+                          "flex-1 rounded-lg border-white/10 text-xs font-medium text-foreground transition-colors cursor-pointer",
                           selected ? "bg-accent text-accent-foreground" : "hover:bg-white/5"
                         ].join(" ")}
                         onClick={() => setGlowIntensity(i.id)}

@@ -1,3 +1,8 @@
+/**
+ * Conversation list row for chats/users sidebar.
+ * Used in ChatSidebar under the Chats and Users tabs.
+ */
+
 import { Avatar } from "@heroui/react";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
@@ -15,9 +20,7 @@ export function ConversationRow({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex w-full items-center gap-3 border-b border-border px-3 py-2.5 text-left ${
-        selected ? "bg-accent-soft" : ""
-      }`}
+      className={`conv-row ${selected ? "conv-row--selected" : ""}`}
     >
       <AvatarWithOnlineIndicator isOnline={user.isOnline ?? true}>
         <Avatar className="size-12 shrink-0">
@@ -28,24 +31,24 @@ export function ConversationRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p
-            className={`truncate text-[15px] ${hasUnread ? "font-bold" : "font-semibold"}`}
-          >
+          <p className={`conv-row__name truncate ${hasUnread ? "font-bold" : ""}`}>
             {user.name}
           </p>
-          {lastMessageAt ? (
-            <span className="ml-auto shrink-0 text-[11px] text-muted">{lastMessageAt}</span>
-          ) : null}
+          {lastMessageAt ? <span className="conv-row__time">{lastMessageAt}</span> : null}
         </div>
         {lastMessagePreview ? (
-          <p className={`truncate text-sm ${hasUnread ? "font-medium text-foreground" : "text-muted"}`}>
+          <p
+            className={`conv-row__preview truncate ${
+              hasUnread ? "font-medium text-[var(--cl-on-surface)]" : ""
+            }`}
+          >
             {lastMessagePreview}
           </p>
         ) : null}
       </div>
 
       {hasUnread ? (
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-accent-foreground">
+        <span className="conv-row__badge">
           {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       ) : null}

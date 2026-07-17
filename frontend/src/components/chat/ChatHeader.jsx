@@ -1,29 +1,38 @@
-import { Avatar, Button } from "@heroui/react";
-import { ChevronLeftIcon, BellIcon, BellOffIcon, PhoneIcon, Volume2Icon, VolumeXIcon, XIcon } from "lucide-react";
-import { AppLogo } from "../AppLogo";
+import { Avatar } from "@heroui/react";
+import {
+  ChevronLeftIcon,
+  PhoneIcon,
+  VideoIcon,
+} from "lucide-react";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
-
-import { ThemePresetPicker } from "../ThemePresetPicker";
-
-import { ThemeToggle } from "../ThemeToggle";
-import { RgbCustomizer } from "../RgbCustomizer";
-
+import { ChatHeaderMenu } from "./ChatHeaderMenu";
 import { useChatStore } from "../../store/useChatStore";
 import { useCallStore } from "../../store/useCallStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
-export function ChatHeader() {
-  const isKeyboardSoundEnabled = useChatStore((state) => state.isKeyboardSoundEnabled);
-  const isNotificationSoundEnabled = useChatStore((state) => state.isNotificationSoundEnabled);
-  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
-  const setKeyboardSoundEnabled = useChatStore((state) => state.setKeyboardSoundEnabled);
-  const setNotificationAlertsEnabled = useChatStore(
-    (state) => state.setNotificationAlertsEnabled,
-  );
+const CALL_CHIP_LABELS = {
+  outgoing: "Ringing",
+  incoming: "Incoming",
+  connecting: "Connecting",
+  active: "In Call",
+};
 
+export function ChatHeader() {
+  const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
   const { activeConversation, isLargeScreen } = useSelectedConversation();
   const callStatus = useCallStore((state) => state.status);
+  const callPeer = useCallStore((state) => state.peer);
   const startCall = useCallStore((state) => state.startCall);
+
+  const isCallWithActivePeer =
+    activeConversation &&
+    callPeer &&
+    String(callPeer.id) === String(activeConversation.id);
+
+  const callChipLabel =
+    isCallWithActivePeer && CALL_CHIP_LABELS[callStatus]
+      ? CALL_CHIP_LABELS[callStatus]
+      : null;
 
   const canStartCall =
     Boolean(activeConversation?.peer.isOnline) && callStatus === "idle";
@@ -38,130 +47,79 @@ export function ChatHeader() {
     });
   };
 
-  const roundedClass = isLargeScreen ? "rounded-tr-[21px]" : "rounded-t-[21px]";
+  if (!activeConversation) {
+    return (
+      <header className="cyber-terminal-header">
+        <p className="headline-md flex-1 text-center sm:text-left">Select a conversation</p>
+        <ChatHeaderMenu />
+      </header>
+    );
+  }
 
   return (
-    <header className={`sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-1.5 py-1.5 sm:gap-2 sm:px-2 sm:py-2 ${roundedClass}`}>
-      {activeConversation && !isLargeScreen ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          isIconOnly
-          className="shrink-0"
-          onPress={() => setActiveConversationId(null)}
+    <header className="cyber-terminal-header">
+      {!isLargeScreen ? (
+        <button
+          type="button"
+          className="cyber-header-icon"
+          aria-label="Back to conversations"
+          onClick={() => setActiveConversationId(null)}
         >
-          <ChevronLeftIcon className="size-6" strokeWidth={2.25} />
-        </Button>
+          <ChevronLeftIcon className="size-5" strokeWidth={2} />
+        </button>
       ) : null}
 
-      {activeConversation ? (
-        <>
-          <AvatarWithOnlineIndicator isOnline={activeConversation.peer.isOnline ?? true}>
-            <Avatar className="size-9 shrink-0">
-              <Avatar.Image
-                alt={activeConversation.peer.name}
-                src={activeConversation.peer.avatarUrl}
-              />
-              <Avatar.Fallback className="text-sm font-medium">
-                {activeConversation.peer.initials}
-              </Avatar.Fallback>
-            </Avatar>
-          </AvatarWithOnlineIndicator>
+      <AvatarWithOnlineIndicator isOnline={activeConversation.peer.isOnline ?? true}>
+        <Avatar className="size-10 shrink-0">
+          <Avatar.Image
+            alt={activeConversation.peer.name}
+            src={activeConversation.peer.avatarUrl}
+          />
+          <Avatar.Fallback className="text-sm font-medium">
+            {activeConversation.peer.initials}
+          </Avatar.Fallback>
+        </Avatar>
+      </AvatarWithOnlineIndicator>
 
-          <div className="flex-1 text-center sm:text-left">
-            <p className="truncate text-[15px] font-semibold leading-tight">
-              {activeConversation.peer.name}
-            </p>
-            <p className="truncate text-xs text-muted">
-              {activeConversation.peer.isOnline ? (
-                <span className="font-medium text-success">Online</span>
-              ) : (
-                "Offline"
-              )}
-            </p>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-1 items-center gap-2.5 sm:text-left">
-          <AppLogo size={36} className="rounded-[9px]" />
-          <div className="flex-1 text-center sm:text-left">
-            <p className="truncate text-[13px] font-medium text-muted">Select a conversation</p>
-          </div>
-        </div>
-      )}
+      <div className="min-w-0 flex-1">
+        <p className="headline-md truncate">{activeConversation.peer.name}</p>
+        <p className="label-tech mt-0.5 truncate">
+          {activeConversation.peer.isOnline ? (
+            <span className="text-[var(--cl-status-online)]">Online</span>
+          ) : (
+            <span>Offline</span>
+          )}
+        </p>
+      </div>
 
-      <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-0.5 sm:gap-1">
-        <div className="hidden min-[400px]:contents">
-          <RgbCustomizer />
-          <ThemePresetPicker />
-        </div>
-
-        <ThemeToggle />
-
-        {activeConversation ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            isIconOnly
-            className="shrink-0"
-            isDisabled={!canStartCall}
-            aria-label="Start voice call"
-            onPress={handleStartCall}
-          >
-            <PhoneIcon className="size-5.5" strokeWidth={2} aria-hidden />
-          </Button>
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        {callChipLabel ? (
+          <span className="call-status-chip" role="status">
+            {callChipLabel}
+          </span>
         ) : null}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          isIconOnly
-          className="shrink-0"
-          aria-pressed={isNotificationSoundEnabled}
-          aria-label={
-            isNotificationSoundEnabled
-              ? "Disable notification sounds"
-              : "Enable notification sounds"
-          }
-          onPress={() => setNotificationAlertsEnabled(!isNotificationSoundEnabled)}
+        <button
+          type="button"
+          className="cyber-header-icon hidden sm:flex"
+          disabled
+          aria-label="Video call (coming soon)"
+          title="Video calls coming soon"
         >
-          {isNotificationSoundEnabled ? (
-            <BellIcon className="size-5.5" strokeWidth={2} aria-hidden />
-          ) : (
-            <BellOffIcon className="size-5.5" strokeWidth={2} aria-hidden />
-          )}
-        </Button>
+          <VideoIcon className="size-4" strokeWidth={2} />
+        </button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          isIconOnly
-          className="shrink-0"
-          aria-pressed={isKeyboardSoundEnabled}
-          aria-label={
-            isKeyboardSoundEnabled ? "Disable keyboard sounds" : "Enable keyboard sounds"
-          }
-          onPress={() => setKeyboardSoundEnabled(!isKeyboardSoundEnabled)}
+        <button
+          type="button"
+          className="cyber-header-icon"
+          disabled={!canStartCall}
+          aria-label="Start voice call"
+          onClick={handleStartCall}
         >
-          {isKeyboardSoundEnabled ? (
-            <Volume2Icon className="size-5.5" strokeWidth={2} aria-hidden />
-          ) : (
-            <VolumeXIcon className="size-5.5" strokeWidth={2} aria-hidden />
-          )}
-        </Button>
+          <PhoneIcon className="size-4" strokeWidth={2} />
+        </button>
 
-        {activeConversation ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            isIconOnly
-            className="shrink-0"
-            aria-label="Close chat"
-            onPress={() => setActiveConversationId(null)}
-          >
-            <XIcon className="size-5.5" strokeWidth={2} aria-hidden />
-          </Button>
-        ) : null}
+        <ChatHeaderMenu />
       </div>
     </header>
   );

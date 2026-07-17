@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@heroui/react";
 import { PauseIcon, PlayIcon } from "lucide-react";
 
 let activeVoiceAudio = null;
+
+const WAVE_BARS = [3, 5, 8, 6, 9, 7, 4, 8, 5, 7, 6, 9, 4, 8, 5];
 
 function formatDuration(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds));
@@ -77,47 +78,36 @@ export function MessageVoice({ src, isOwnMessage = false }) {
   const timeLabel = isPlaying || currentTime > 0 ? currentTime : duration;
 
   return (
-    <div className="mb-1.5 flex min-w-48 max-w-full items-center gap-2 sm:min-w-56">
+    <div className={`msg-voice ${isOwnMessage ? "msg-voice--own" : "msg-voice--peer"}`}>
       <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
-      <Button
-        variant="ghost"
-        isIconOnly
-        size="sm"
+      <button
+        type="button"
+        className="msg-voice__play"
         aria-label={isPlaying ? "Pause voice message" : "Play voice message"}
-        className={`size-8 min-w-8 shrink-0 rounded-full ${
-          isOwnMessage
-            ? "bg-accent-foreground/15 text-accent-foreground"
-            : "bg-accent/10 text-accent"
-        }`}
-        onPress={togglePlayback}
+        onClick={() => void togglePlayback()}
       >
         {isPlaying ? (
           <PauseIcon className="size-4" strokeWidth={2} />
         ) : (
           <PlayIcon className="size-4" strokeWidth={2} />
         )}
-      </Button>
+      </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div
-          className={`h-1.5 overflow-hidden rounded-full ${
-            isOwnMessage ? "bg-accent-foreground/20" : "bg-border"
-          }`}
-        >
-          <div
-            className={`h-full rounded-full transition-[width] duration-150 ${
-              isOwnMessage ? "bg-accent-foreground" : "bg-accent"
-            }`}
-            style={{ width: `${progress}%` }}
-          />
+      <div className="msg-voice__body">
+        <div className="msg-voice__wave" aria-hidden>
+          {WAVE_BARS.map((height, index) => {
+            const barProgress = (index / WAVE_BARS.length) * 100;
+            const isActive = barProgress <= progress;
+            return (
+              <span
+                key={index}
+                className={`msg-voice__bar ${isActive ? "msg-voice__bar--active" : ""}`}
+                style={{ height: `${height * 2}px` }}
+              />
+            );
+          })}
         </div>
-        <span
-          className={`text-[11px] tabular-nums ${
-            isOwnMessage ? "text-accent-foreground/75" : "text-muted"
-          }`}
-        >
-          {formatDuration(timeLabel)}
-        </span>
+        <span className="caption-tabular">{formatDuration(timeLabel)}</span>
       </div>
     </div>
   );

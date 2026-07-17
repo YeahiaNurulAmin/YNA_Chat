@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
 
 export function RgbProvider({ children }) {
   const [rgbTheme, setRgbThemeState] = useState(() => {
-    return localStorage.getItem(STORAGE_KEYS.THEME) ?? "rainbow-flow";
+    return localStorage.getItem(STORAGE_KEYS.THEME) ?? "cyberpunk";
   });
   const [speed, setSpeedState] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.SPEED) ?? "medium";

@@ -29,11 +29,9 @@ export function MessageActionsMenu({ isOwnMessage, onReply, onForward, onDelete 
         size="sm"
         aria-label="Message options"
         aria-expanded={isOpen}
-        className={`size-6 min-w-6 ${
-          isOwnMessage
-            ? "text-accent-foreground/80 hover:text-accent-foreground"
-            : "text-muted hover:text-foreground"
-        }`}
+        className={`size-6 min-w-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 ${
+          isOpen ? "opacity-100" : ""
+        } ${isOwnMessage ? "text-white/70 hover:text-white" : "text-[var(--cl-outline)] hover:text-[var(--cl-on-surface)]"}`}
         onPress={() => setIsOpen((open) => !open)}
       >
         <MoreVerticalIcon className="size-4" strokeWidth={2} aria-hidden />
@@ -42,7 +40,7 @@ export function MessageActionsMenu({ isOwnMessage, onReply, onForward, onDelete 
       {isOpen ? (
         <div
           role="menu"
-          className="absolute bottom-full right-0 z-20 mb-1 min-w-[9.5rem] overflow-hidden rounded-xl border border-border bg-background py-1 shadow-lg"
+          className="cyber-settings-menu absolute bottom-full right-0 z-20 mb-1 min-w-[9.5rem]"
         >
           <button
             type="button"

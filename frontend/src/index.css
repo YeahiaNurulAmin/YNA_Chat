@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "./styles/heroui-theme-presets.css";
+@import "./styles/cyber-luxe-glass.css";
 
 /* HeroUI's dark fallback uses prefers-color-scheme but forgot [data-theme="light"], so OS dark +
    app light still applied dark: utilities. Re-define so explicit light theme wins system dark. */
@@ -102,4 +103,349 @@
   pointer-events: none;
   z-index: 0;
   border-radius: inherit;
+}
+
+/* ── RGB-aligned UI design system ── */
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04) translate(1%, -0.5%);
+  }
+}
+
+@keyframes shimmer-text {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float-glow {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+/* Outer page shell behind the RGB frame */
+.app-shell {
+  position: relative;
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  user-select: none;
+  background: #030306;
+}
+
+.app-shell-backdrop {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -10%, color-mix(in oklch, var(--accent) 18%, transparent), transparent 65%),
+    radial-gradient(ellipse 45% 35% at 95% 95%, rgba(168, 85, 247, 0.12), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 5% 90%, rgba(56, 189, 248, 0.1), transparent 55%),
+    #030306;
+}
+
+.app-shell-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 50%, black 20%, transparent 85%);
+}
+
+/* Inner content panel inside RGB border */
+.app-inner-panel {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 21px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in oklch, var(--background) 88%, transparent);
+  backdrop-filter: blur(28px);
+  color: var(--foreground);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 40px rgba(0, 0, 0, 0.15);
+}
+
+.dark .app-inner-panel {
+  background: color-mix(in oklch, var(--background) 82%, transparent);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Subtle RGB-tinted accent line for headers / dividers */
+.rgb-accent-line {
+  position: relative;
+}
+
+.rgb-accent-line::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--accent) 55%, transparent) 30%,
+    color-mix(in oklch, var(--accent) 70%, transparent) 50%,
+    color-mix(in oklch, var(--accent) 55%, transparent) 70%,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+/* Glass header bar */
+.glass-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.dark .glass-header {
+  background: color-mix(in oklch, var(--background) 65%, transparent);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Glass sidebar */
+.glass-sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in oklch, var(--surface) 55%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.dark .glass-sidebar {
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+}
+
+/* Brand title with animated accent shimmer */
+.brand-title {
+  background: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    color-mix(in oklch, var(--accent) 80%, var(--foreground)) 45%,
+    var(--foreground) 90%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-text 6s linear infinite;
+}
+
+/* Conversation list rows */
+.conv-row {
+  display: flex;
+  width: calc(100% - 1rem);
+  margin-inline: 0.5rem;
+  margin-block: 0.125rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid transparent;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.conv-row:hover {
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.conv-row--selected {
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  border-color: color-mix(in oklch, var(--accent) 35%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--accent) 12%, transparent),
+    0 4px 16px -4px color-mix(in oklch, var(--accent) 25%, transparent);
+}
+
+/* Message bubbles */
+.msg-bubble-own {
+  border-bottom-right-radius: 0.375rem;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    color-mix(in oklch, var(--accent) 85%, black) 100%
+  );
+  color: var(--accent-foreground);
+  box-shadow:
+    0 2px 12px -2px color-mix(in oklch, var(--accent) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.msg-bubble-peer {
+  border-bottom-left-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in oklch, var(--surface) 80%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.2);
+}
+
+.dark .msg-bubble-peer {
+  background: color-mix(in oklch, var(--surface) 65%, transparent);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Message area subtle texture */
+.msg-area {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, color-mix(in oklch, var(--accent) 6%, transparent), transparent 70%),
+    transparent;
+}
+
+/* Floating glass composer */
+.composer-glass {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: color-mix(in oklch, var(--background) 75%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.composer-input-wrap {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklch, var(--surface) 60%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 20px -8px color-mix(in oklch, var(--accent) 20%, transparent);
+}
+
+/* Empty state with RGB glow orb */
+.empty-state-orb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 25%, transparent);
+  box-shadow:
+    0 0 40px -8px color-mix(in oklch, var(--accent) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: float-glow 4s ease-in-out infinite;
+}
+
+/* Glass modal for theme/RGB pickers */
+.glass-modal {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in oklch, #1a1a1e 92%, transparent);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 24px 80px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Toolbar icon cluster */
+.toolbar-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.125rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklch, var(--surface) 50%, transparent);
+  padding: 0.125rem;
+  backdrop-filter: blur(8px);
+}
+
+/* Auth hero with RGB mesh */
+.auth-hero-panel {
+  position: relative;
+  display: flex;
+  min-height: min(320px, 42vh);
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--background) 90%, black);
+}
+
+.auth-hero-panel::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%, color-mix(in oklch, var(--accent) 20%, transparent), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(168, 85, 247, 0.15), transparent 55%);
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+/* Auth card glass shell */
+.auth-glass-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in oklch, var(--background) 78%, transparent);
+  backdrop-filter: blur(28px);
+  box-shadow:
+    0 32px 90px -24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.auth-glass-card::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--accent) 50%, transparent) 50%,
+    transparent
+  );
+}
+
+/* Date divider in message list */
+.msg-date-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 0.75rem 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.msg-date-divider::before,
+.msg-date-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }

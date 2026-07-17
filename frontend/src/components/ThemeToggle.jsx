@@ -6,7 +6,7 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-default bg-surface p-1 shadow-sm">
+    <div className="flex items-center gap-0.5">
       <Button
         size="sm"
         variant={theme === "light" ? "primary" : "ghost"}

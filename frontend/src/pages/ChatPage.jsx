@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { fetchLocationConfig } from "../lib/locationApi";
 import { useUnreadDocumentTitle } from "../hooks/useUnreadDocumentTitle";
 import ChatSidebar from "../components/chat/ChatSidebar";
+import { ChannelIntel } from "../components/chat/ChannelIntel";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { MessageList } from "../components/chat/MessageList";
 import { ChatComposer } from "../components/chat/ChatComposer";
@@ -35,21 +36,27 @@ function ChatPage() {
   }, [getMessages, activeConversationId, markConversationRead]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden p-0 bg-[#09090b] relative select-none">
-      <div className="relative flex w-full flex-1 rounded-3xl p-[3px] overflow-hidden rgb-border-glow shadow-2xl" style={rgbStyle}>
+    <div className="app-shell">
+      <div className="app-shell-backdrop" aria-hidden />
+      <div
+        className="cyber-rgb-frame rgb-border-glow shadow-2xl"
+        style={rgbStyle}
+      >
         {showGlow && <div className="rgb-backdrop-glow" />}
-        <div className="relative flex w-full flex-1 overflow-hidden rounded-[21px] bg-background text-foreground z-10 border border-border/30">
+        <div className="cyber-frame-inner">
           <ChatSidebar />
 
           <div
-            className={`flex-1 flex-col overflow-hidden ${
+            className={`cyber-chat-stage ${
               !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
             }`}
           >
-            <ChatHeader />
-            <MessageList displayMessages={activeConversation?.messages} />
-
-            {activeConversation ? <ChatComposer /> : null}
+            <div className="cyber-glass-panel cyber-main-panel flex flex-col overflow-hidden">
+              <ChatHeader />
+              <MessageList displayMessages={activeConversation?.messages} />
+              <ChatComposer />
+            </div>
+            {activeConversation ? <ChannelIntel /> : null}
           </div>
         </div>
       </div>
