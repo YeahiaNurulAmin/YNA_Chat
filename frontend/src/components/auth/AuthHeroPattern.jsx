@@ -14,26 +14,26 @@ export function AuthHeroPattern() {
     <>
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_90%_70%_at_50%_40%,rgba(0,122,255,0.2),transparent_62%)] dark:block"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_40%,color-mix(in_oklch,var(--accent)_22%,transparent),transparent_62%)]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-linear-to-r from-black via-transparent to-black opacity-70 dark:block"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-background via-transparent to-background opacity-80"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-linear-to-b from-black/50 via-transparent to-black/90 dark:block"
+        className="pointer-events-none absolute inset-0 bg-linear-to-b from-background/60 via-transparent to-background/95"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 dark:hidden"
-        style={gridStyle("rgba(0,0,0,0.11)")}
+        className="pointer-events-none absolute inset-0 z-0 opacity-40"
+        style={gridStyle("color-mix(in oklch, var(--foreground) 8%, transparent)")}
       />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0 hidden dark:block"
         style={{
-          ...gridStyle("rgba(255,255,255,0.07)"),
+          ...gridStyle("rgba(255,255,255,0.05)"),
           WebkitMaskImage: darkGridMask,
           maskImage: darkGridMask,
         }}

@@ -4,6 +4,19 @@ import { LiveLocationGroup } from "./LiveLocationGroup";
 import { NoConversationPlaceholder } from "./NoConversationPlaceholder";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
 
+function formatDateDivider(date = new Date()) {
+  const day = date.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+  const monthDay = date
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .toUpperCase();
+  return `${day}, ${monthDay}`;
+}
+
+function getMessageSenderKey(item) {
+  if (item.kind === "liveLocationGroup") return `live-${item.id}`;
+  return item.role;
+}
+
 export function MessageList({ displayMessages }) {
   const { activeConversation, activeConversationId } = useSelectedConversation();
   const messages = displayMessages ?? activeConversation?.messages ?? [];
@@ -18,22 +31,39 @@ export function MessageList({ displayMessages }) {
       {activeConversation ? (
         <div
           ref={messagesScrollRef}
-          className="flex flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-3 sm:py-4"
+          className="msg-area flex flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-4 sm:px-5 sm:py-5"
         >
-          <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-wide text-muted">
-            Today
-          </p>
-          {messages.map((item) =>
-            item.kind === "liveLocationGroup" ? (
-              <LiveLocationGroup key={item.id} group={item} />
-            ) : (
-              <MessageBubble
+          <p className="msg-date-divider">{formatDateDivider()}</p>
+
+          {messages.map((item, index) => {
+            const prevItem = messages[index - 1];
+            const senderKey = getMessageSenderKey(item);
+            const prevSenderKey = prevItem ? getMessageSenderKey(prevItem) : null;
+            const isGrouped = prevSenderKey === senderKey;
+
+            if (item.kind === "liveLocationGroup") {
+              return (
+                <div
+                  key={item.id}
+                  className={isGrouped ? "msg-group-gap" : "msg-sender-gap"}
+                >
+                  <LiveLocationGroup group={item} />
+                </div>
+              );
+            }
+
+            return (
+              <div
                 key={item.id}
-                message={item}
-                peerName={activeConversation.peer.name}
-              />
-            ),
-          )}
+                className={isGrouped ? "msg-group-gap" : "msg-sender-gap"}
+              >
+                <MessageBubble
+                  message={item}
+                  peerName={activeConversation.peer.name}
+                />
+              </div>
+            );
+          })}
         </div>
       ) : (
         <NoConversationPlaceholder />

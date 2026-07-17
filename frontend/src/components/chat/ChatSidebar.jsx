@@ -5,10 +5,9 @@ import { getMessagePreview } from "../../lib/messagePreview";
 import { formatMessageTime } from "../../lib/utils";
 import { APP_NAME, AppLogo } from "../AppLogo";
 import { UserButton } from "@clerk/react";
-
-import { SearchField, Tabs } from "@heroui/react";
-import { MessageSquareIcon, UsersIcon } from "lucide-react";
+import { MessageSquareIcon, SearchIcon, UsersIcon } from "lucide-react";
 import { ConversationRow } from "./ConversationRow";
+import { SidebarSettingsMenu } from "./SidebarSettingsMenu";
 
 function mapUserForList(user, onlineUsers, { unreadCounts = {}, conversationMeta = {} } = {}) {
   const id = String(user._id);
@@ -82,18 +81,25 @@ function ChatSidebar() {
     ? allUsers.filter((user) => user.name.toLowerCase().includes(normalizedSearchQuery))
     : allUsers;
 
+  const listItems = sidebarTab === "chats" ? filteredConversations : filteredUsers;
+
   return (
     <aside
-      className={`w-full shrink-0 flex-col overflow-hidden border-r border-border lg:w-72 ${
+      className={`cyber-glass-panel cyber-sidebar flex-col overflow-hidden ${
         !isLargeScreen && activeConversationId ? "hidden lg:flex" : "flex"
       }`}
     >
-      <div className="shrink-0 border-b border-border px-2 pb-2 pt-2.5 sm:px-3 sm:pt-3">
-        <div className="flex items-center gap-2 px-0.5 sm:gap-2.5 sm:px-1">
-          <AppLogo size={52} className="size-8 shrink-0 rounded-[9px] sm:size-8.5" alt="" />
-          <p className="flex-1 truncate text-lg font-bold tracking-tight sm:text-[22px]">
-            {APP_NAME}
-          </p>
+      <div className="cyber-sidebar-header">
+        <div className="flex items-start gap-2.5">
+          <AppLogo
+            size={52}
+            className="size-9 shrink-0 rounded-lg ring-1 ring-white/10"
+            alt=""
+          />
+          <div className="min-w-0 flex-1">
+            <p className="brand-title truncate">{APP_NAME}</p>
+            <p className="label-tech mt-0.5">Protocol 4.2 Active</p>
+          </div>
           <UserButton
             appearance={{
               elements: {
@@ -104,82 +110,67 @@ function ChatSidebar() {
         </div>
       </div>
 
-      <Tabs
-        selectedKey={sidebarTab}
-        onSelectionChange={(key) => setSidebarTab(String(key))}
-        variant="secondary"
-        className="flex flex-1 flex-col overflow-y-auto"
-      >
-        <div className="shrink-0 border-b border-border px-3 pb-2 pt-2">
-          <SearchField
-            fullWidth
-            variant="secondary"
-            className="w-full"
-            value={searchQuery}
-            onChange={setSearchQuery}
-          >
-            <SearchField.Group className="rounded-xl">
-              <SearchField.SearchIcon />
-              <SearchField.Input placeholder="Search" />
-              {searchQuery ? <SearchField.ClearButton /> : null}
-            </SearchField.Group>
-          </SearchField>
-        </div>
+      <div className="cyber-search-wrap">
+        <SearchIcon className="cyber-search-icon size-4" aria-hidden />
+        <input
+          type="search"
+          className="cyber-search-input"
+          placeholder="Search decrypted streams..."
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
+      </div>
 
-        <Tabs.ListContainer className="shrink-0 border-b border-border px-2 pb-2 pt-1">
-          <Tabs.List className="w-full gap-0.5">
-            <Tabs.Tab id="chats" className="flex-1 justify-center gap-1.5">
-              <MessageSquareIcon className="size-3.5 opacity-80" aria-hidden />
-              Chats
-            </Tabs.Tab>
-            <Tabs.Tab id="users" className="flex-1 justify-center gap-1.5">
-              <UsersIcon className="size-3.5 opacity-80" aria-hidden />
-              Users
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
-
-        <Tabs.Panel
-          id="chats"
-          className="flex-1 overflow-x-hidden overflow-y-auto outline-none"
+      <div className="cyber-tabs">
+        <button
+          type="button"
+          className={`cyber-tab ${sidebarTab === "chats" ? "cyber-tab--active" : ""}`}
+          onClick={() => setSidebarTab("chats")}
         >
-          {filteredConversations.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">
-              No conversations match your search.
-            </p>
-          ) : (
-            filteredConversations.map((conversation) => (
-              <ConversationRow
-                key={conversation.id}
-                user={conversation}
-                selected={conversation.id === activeConversationId}
-                onSelect={() => setActiveConversationId(conversation.id)}
-                unreadCount={conversation.unreadCount}
-                lastMessagePreview={conversation.lastMessagePreview}
-                lastMessageAt={conversation.lastMessageAt}
-              />
-            ))
-          )}
-        </Tabs.Panel>
+          <MessageSquareIcon className="size-3.5" aria-hidden />
+          Chats
+        </button>
+        <button
+          type="button"
+          className={`cyber-tab ${sidebarTab === "users" ? "cyber-tab--active" : ""}`}
+          onClick={() => setSidebarTab("users")}
+        >
+          <UsersIcon className="size-3.5" aria-hidden />
+          Users
+        </button>
+      </div>
 
-        <Tabs.Panel id="users" className="flex-1 overflow-x-hidden overflow-y-auto outline-none">
-          {filteredUsers.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">No people match your search.</p>
-          ) : (
-            filteredUsers.map((user) => (
-              <ConversationRow
-                key={user.conversationId}
-                user={user}
-                selected={user.conversationId === activeConversationId}
-                onSelect={() => setActiveConversationId(user.conversationId)}
-                unreadCount={user.unreadCount}
-                lastMessagePreview={user.lastMessagePreview}
-                lastMessageAt={user.lastMessageAt}
-              />
-            ))
-          )}
-        </Tabs.Panel>
-      </Tabs>
+      <div className="flex-1 overflow-x-hidden overflow-y-auto">
+        {listItems.length === 0 ? (
+          <p className="px-4 py-6 text-center text-sm text-[var(--cl-on-surface-variant)]">
+            {sidebarTab === "chats"
+              ? "No conversations match your search."
+              : "No people match your search."}
+          </p>
+        ) : (
+          listItems.map((item) => (
+            <ConversationRow
+              key={item.id ?? item.conversationId}
+              user={item}
+              selected={(item.id ?? item.conversationId) === activeConversationId}
+              onSelect={() => setActiveConversationId(item.id ?? item.conversationId)}
+              unreadCount={item.unreadCount}
+              lastMessagePreview={item.lastMessagePreview}
+              lastMessageAt={item.lastMessageAt}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="cyber-sidebar-footer">
+        <div className="flex items-center gap-2">
+          <span className="cyber-status-dot" aria-hidden />
+          <span className="label-tech text-[11px] text-[var(--cl-status-online)]">
+            System: Secure
+          </span>
+        </div>
+        <SidebarSettingsMenu />
+      </div>
     </aside>
   );
 }

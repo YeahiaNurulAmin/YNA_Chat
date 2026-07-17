@@ -7,9 +7,9 @@ import { AuthCardShell } from "./AuthCardShell";
 const AFTER_AUTH = "/";
 
 const logoTileClassName = [
-  "relative rounded-2xl bg-linear-to-b from-white to-[#f2f2f7] p-2",
-  "shadow-lg shadow-black/8 ring-1 ring-black/8",
-  "dark:from-[#2c2c2e] dark:to-[#1a1a1c] dark:shadow-black/50 dark:ring-white/12",
+  "relative rounded-2xl p-2",
+  "bg-surface/60 ring-1 ring-white/10 backdrop-blur-sm",
+  "shadow-[0_0_24px_-4px] shadow-accent/30",
 ].join(" ");
 
 const continueButtonClassName = [
@@ -65,9 +65,9 @@ export function AuthActionPanel() {
           </Button>
         }
 
-        <div className="mt-8 flex items-center justify-center gap-2 border-t border-black/6 pt-6 text-[11px] text-[#8E8E93] dark:border-white/8 dark:text-[#636366]">
+        <div className="mt-8 flex items-center justify-center gap-2 border-t border-white/6 pt-6 text-[11px] text-muted">
           <ShieldCheckIcon
-            className="size-3.5 shrink-0 text-[#34C759] dark:text-[#30D158]"
+            className="size-3.5 shrink-0 text-success"
             strokeWidth={2}
             aria-hidden
           />

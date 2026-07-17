@@ -1,4 +1,4 @@
-import { Button, TextArea } from "@heroui/react";
+import { Button } from "@heroui/react";
 import {
   ChevronDownIcon,
   ImageIcon,
@@ -7,6 +7,7 @@ import {
   MicIcon,
   PauseIcon,
   PlayIcon,
+  PlusIcon,
   SendHorizontalIcon,
   SquareIcon,
   XIcon,
@@ -21,6 +22,7 @@ import { MEDIA_ACCEPT } from "../../lib/media";
 import { useChatStore } from "../../store/useChatStore";
 import { EmergencyLocationModal } from "./EmergencyLocationModal";
 import { LocationPickerModal } from "./LocationPickerModal";
+import { TerminalMetadata } from "./TerminalMetadata";
 
 const MIN_VOICE_DURATION_SECONDS = 1;
 const LOCATION_LONG_PRESS_MS = 500;
@@ -339,8 +341,34 @@ export function ChatComposer() {
 
   useEffect(() => () => clearLocationLongPress(), [clearLocationLongPress]);
 
+  if (!activeConversationId) {
+    return (
+      <footer className="composer-glass">
+        <TerminalMetadata />
+        <div className="composer-input-wrap composer-input-wrap--disabled">
+          <button type="button" className="cyber-composer-btn" disabled aria-hidden>
+            <PlusIcon className="size-5" strokeWidth={2} />
+          </button>
+          <textarea
+            className="cyber-composer-textarea"
+            placeholder="Transmit message..."
+            disabled
+            rows={1}
+            readOnly
+          />
+          <button type="button" className="cyber-composer-btn" disabled aria-hidden>
+            <ImageIcon className="size-5" strokeWidth={2} />
+          </button>
+          <button type="button" className="cyber-send-btn" disabled aria-hidden>
+            <SendHorizontalIcon className="size-4" strokeWidth={2.25} />
+          </button>
+        </div>
+      </footer>
+    );
+  }
+
   return (
-    <footer className="shrink-0 border-t border-border px-1.5 pb-2 pt-2 sm:px-2">
+    <footer className="composer-glass">
       <LocationPickerModal
         isOpen={isLocationPickerOpen}
         onOpenChange={setIsLocationPickerOpen}
@@ -359,9 +387,9 @@ export function ChatComposer() {
       />
 
       {isSendingMedia ? (
-        <div className="mx-auto mb-2 flex max-w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted">
+        <div className="composer-status-banner">
           <LoaderIcon
-            className="size-4 shrink-0 animate-spin text-accent"
+            className="size-4 shrink-0 animate-spin text-[var(--cl-glow-cyan)]"
             strokeWidth={2}
             aria-hidden
           />
@@ -370,9 +398,9 @@ export function ChatComposer() {
       ) : null}
 
       {isLocationLoading && !isEmergencyActive ? (
-        <div className="mx-auto mb-2 flex max-w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted">
+        <div className="composer-status-banner">
           <LoaderIcon
-            className="size-4 shrink-0 animate-spin text-accent"
+            className="size-4 shrink-0 animate-spin text-[var(--cl-glow-cyan)]"
             strokeWidth={2}
             aria-hidden
           />
@@ -381,14 +409,17 @@ export function ChatComposer() {
       ) : null}
 
       {isEmergencyActive ? (
-        <div className="mx-auto mb-2 flex w-full max-w-full items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 sm:px-4">
+        <div className="composer-status-banner composer-status-banner--alert">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
+            <span
+              className="size-2.5 shrink-0 animate-pulse rounded-full bg-[var(--cl-status-alert)]"
+              aria-hidden
+            />
             <div className="min-w-0">
-              <span className="block truncate text-sm font-medium text-red-700 dark:text-red-400">
+              <span className="block truncate text-sm font-medium text-[var(--cl-status-alert)]">
                 Live location active
               </span>
-              <span className="block truncate text-xs text-muted">
+              <span className="block truncate text-xs text-[var(--cl-on-surface-variant)]">
                 {elapsedLabel} · {emergencySendCount} update{emergencySendCount === 1 ? "" : "s"} ·
                 best-effort — keep app open
               </span>
@@ -406,28 +437,28 @@ export function ChatComposer() {
         </div>
       ) : null}
 
+      <TerminalMetadata />
+
       {voicePreview ? (
-        <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-3 py-3 sm:px-4">
+        <div className="composer-session-card">
           <div className="flex min-w-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              isIconOnly
-              size="sm"
+            <button
+              type="button"
+              className="cyber-composer-btn text-[var(--cl-glow-cyan)]"
               aria-label={isPreviewPlaying ? "Pause preview" : "Play preview"}
-              className="size-9 min-w-9 shrink-0 text-accent"
-              onPress={togglePreviewPlayback}
+              onClick={() => void togglePreviewPlayback()}
             >
               {isPreviewPlaying ? (
                 <PauseIcon className="size-4" strokeWidth={2} />
               ) : (
                 <PlayIcon className="size-4" strokeWidth={2} />
               )}
-            </Button>
+            </button>
             <div className="min-w-0">
-              <span className="block truncate text-sm font-medium text-foreground">
+              <span className="block truncate text-sm font-medium text-[var(--cl-on-surface)]">
                 Voice preview
               </span>
-              <span className="block truncate text-xs text-muted">
+              <span className="block truncate text-xs text-[var(--cl-on-surface-variant)]">
                 Listen, then send or cancel
               </span>
             </div>
@@ -440,185 +471,191 @@ export function ChatComposer() {
             />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="text-sm tabular-nums text-muted">
+            <span className="caption-tabular">
               {formatRecordingTime(voicePreview.durationSeconds)}
             </span>
-            <Button
-              variant="ghost"
-              isIconOnly
-              size="sm"
+            <button
+              type="button"
+              className="cyber-composer-btn"
               aria-label="Discard recording"
-              className="size-8 min-w-8 text-muted"
-              onPress={handleDiscardPreview}
+              onClick={handleDiscardPreview}
             >
               <XIcon className="size-4" strokeWidth={2} />
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
+            </button>
+            <button
+              type="button"
+              className="cyber-btn-primary h-8 gap-1.5 px-3 text-xs"
               aria-label="Send voice message"
-              className="h-8 gap-1.5 px-3"
-              onPress={handleSendPreview}
+              onClick={() => void handleSendPreview()}
             >
               <SendHorizontalIcon className="size-3.5" strokeWidth={2} />
-              <span className="text-xs font-medium">Send</span>
-            </Button>
+              Send
+            </button>
           </div>
         </div>
       ) : isRecording ? (
-        <div className="mx-auto flex w-full max-w-full items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-3 py-3 sm:px-4">
+        <div className="composer-session-card">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-red-500" aria-hidden />
+            <span
+              className="size-2.5 shrink-0 animate-pulse rounded-full bg-[var(--cl-status-alert)]"
+              aria-hidden
+            />
             <div className="min-w-0">
-              <span className="block truncate text-sm font-medium text-foreground">Recording</span>
-              <span className="block truncate text-xs text-muted">Tap stop when finished</span>
+              <span className="block truncate text-sm font-medium text-[var(--cl-on-surface)]">
+                Recording
+              </span>
+              <span className="block truncate text-xs text-[var(--cl-on-surface-variant)]">
+                Tap stop when finished
+              </span>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <span className="text-sm tabular-nums text-muted">
-              {formatRecordingTime(elapsedSeconds)}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
+            <span className="caption-tabular">{formatRecordingTime(elapsedSeconds)}</span>
+            <button
+              type="button"
+              className="cyber-composer-btn h-8 gap-1.5 px-2.5 text-xs"
               aria-label="Cancel recording"
-              className="h-8 gap-1.5 px-2.5 text-muted"
-              onPress={handleCancelTapRecording}
+              onClick={() => void handleCancelTapRecording()}
             >
               <XIcon className="size-3.5" strokeWidth={2} />
-              <span className="text-xs font-medium">Cancel</span>
-            </Button>
+              Cancel
+            </button>
             {recordingMode === "tap" ? (
-              <Button
-                variant="primary"
-                size="sm"
+              <button
+                type="button"
+                className="cyber-btn-primary h-8 gap-1.5 px-3 text-xs"
                 aria-label="Stop recording"
-                className="h-8 gap-1.5 px-3"
-                onPress={handleStopTapRecording}
+                onClick={() => void handleStopTapRecording()}
               >
                 <SquareIcon className="size-3.5 fill-current" strokeWidth={0} />
-                <span className="text-xs font-medium">Stop</span>
-              </Button>
+                Stop
+              </button>
             ) : null}
           </div>
         </div>
       ) : (
         <div className="mx-auto flex w-full max-w-full flex-col gap-2">
           {replyingTo ? (
-            <div className="flex items-start justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2">
+            <div className="composer-reply-bar">
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-accent">
+                <p className="text-xs font-semibold text-[var(--cl-glow-cyan)]">
                   Replying to {replyingTo.senderName}
                 </p>
-                <p className="truncate text-sm text-muted">{replyingTo.text}</p>
+                <p className="truncate text-sm text-[var(--cl-on-surface-variant)]">
+                  {replyingTo.text}
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                isIconOnly
-                size="sm"
+              <button
+                type="button"
+                className="cyber-composer-btn shrink-0"
                 aria-label="Cancel reply"
-                className="size-8 shrink-0 text-muted"
-                onPress={clearReplyingTo}
+                onClick={clearReplyingTo}
               >
                 <XIcon className="size-4" strokeWidth={2} />
-              </Button>
+              </button>
             </div>
           ) : null}
 
-          <div className="mx-auto flex w-full max-w-full items-end gap-1.5 px-0.5 sm:gap-2 sm:px-1">
-          <input
-            ref={mediaInputRef}
-            type="file"
-            accept={MEDIA_ACCEPT}
-            multiple
-            className="sr-only"
-            disabled={isSendingMedia || isVoiceSessionActive}
-            tabIndex={-1}
-            aria-hidden
-            onChange={handleMediaPick}
-          />
-          <Button
-            variant="ghost"
-            isIconOnly
-            isDisabled={isSendingMedia || isVoiceSessionActive}
-            className="size-9 shrink-0 touch-manipulation self-end text-accent"
-            onPress={() => mediaInputRef.current?.click()}
-          >
-            <ImageIcon className="size-5 sm:size-6" strokeWidth={2} />
-          </Button>
-          <div className="flex shrink-0 items-end self-end">
-            <Button
-              variant="ghost"
-              isIconOnly
-              isDisabled={isLocationButtonDisabled}
-              aria-label="Send location. Long press for emergency live sharing."
-              className="size-9 min-w-9 touch-manipulation text-accent"
-              onPointerDown={handleLocationPointerDown}
-              onPointerUp={handleLocationPointerUp}
-              onPointerLeave={clearLocationLongPress}
-              onPointerCancel={clearLocationLongPress}
+          <div className="composer-input-wrap flex w-full items-center gap-1">
+            <input
+              ref={mediaInputRef}
+              type="file"
+              accept={MEDIA_ACCEPT}
+              multiple
+              className="sr-only"
+              disabled={isSendingMedia || isVoiceSessionActive}
+              tabIndex={-1}
+              aria-hidden
+              onChange={handleMediaPick}
+            />
+            <button
+              type="button"
+              className="cyber-composer-btn"
+              disabled={isSendingMedia || isVoiceSessionActive}
+              aria-label="Attach files"
+              onClick={() => mediaInputRef.current?.click()}
             >
-              {isLocationLoading ? (
-                <LoaderIcon className="size-5 animate-spin sm:size-6" strokeWidth={2} />
-              ) : (
-                <MapPinIcon className="size-5 sm:size-6" strokeWidth={2} />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              isIconOnly
-              isDisabled={isLocationButtonDisabled}
-              aria-label="Emergency live location"
-              className="size-7 min-w-7 touch-manipulation text-muted"
-              onPress={() => setIsEmergencyModalOpen(true)}
-            >
-              <ChevronDownIcon className="size-4" strokeWidth={2} />
-            </Button>
-          </div>
-          <TextArea
-            fullWidth
-            variant="secondary"
-            placeholder="YNA Chat"
-            rows={1}
-            value={composerText}
-            isDisabled={isSendingText}
-            onChange={handleComposerTextChange}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void handleSend();
-              }
-            }}
-            className="flex-1 rounded-full"
-          />
+              <PlusIcon className="size-5" strokeWidth={2} />
+            </button>
 
-          {showVoiceButtons ? (
-            <div className="flex shrink-0 items-end gap-1">
-              <Button
-                variant="primary"
-                isDisabled={isSendingMedia}
-                aria-label="Tap to record voice message"
-                className="h-9 gap-1 px-2.5 sm:px-3"
-                onPress={beginTapRecording}
-              >
-                <MicIcon className="size-4" strokeWidth={2} />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="primary"
-              isIconOnly
-              isDisabled={!hasText || isSendingText}
-              aria-label={isSendingText ? "Sending message" : "Send message"}
-              onPress={() => void handleSend()}
+            <textarea
+              className="cyber-composer-textarea"
+              placeholder="Transmit message..."
+              rows={1}
+              value={composerText}
+              disabled={isSendingText}
+              onChange={handleComposerTextChange}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSend();
+                }
+              }}
+            />
+
+            <button
+              type="button"
+              className="cyber-composer-btn"
+              disabled={isSendingMedia || isVoiceSessionActive}
+              aria-label="Attach media"
+              onClick={() => mediaInputRef.current?.click()}
             >
-              {isSendingText ? (
-                <LoaderIcon className="size-5 animate-spin" strokeWidth={2} aria-hidden />
-              ) : (
-                <SendHorizontalIcon className="size-5" />
-              )}
-            </Button>
-          )}
+              <ImageIcon className="size-5" strokeWidth={2} />
+            </button>
+
+            <div className="flex shrink-0 items-center">
+              <button
+                type="button"
+                className="cyber-composer-btn"
+                disabled={isLocationButtonDisabled}
+                aria-label="Send location. Long press for emergency live sharing."
+                onPointerDown={handleLocationPointerDown}
+                onPointerUp={handleLocationPointerUp}
+                onPointerLeave={clearLocationLongPress}
+                onPointerCancel={clearLocationLongPress}
+              >
+                {isLocationLoading ? (
+                  <LoaderIcon className="size-5 animate-spin" strokeWidth={2} />
+                ) : (
+                  <MapPinIcon className="size-5" strokeWidth={2} />
+                )}
+              </button>
+              <button
+                type="button"
+                className="cyber-composer-btn size-8 min-w-8"
+                disabled={isLocationButtonDisabled}
+                aria-label="Emergency live location"
+                onClick={() => setIsEmergencyModalOpen(true)}
+              >
+                <ChevronDownIcon className="size-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            {showVoiceButtons ? (
+              <button
+                type="button"
+                className="cyber-composer-btn text-[var(--cl-glow-cyan)]"
+                disabled={isSendingMedia}
+                aria-label="Tap to record voice message"
+                onClick={beginTapRecording}
+              >
+                <MicIcon className="size-5" strokeWidth={2} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="cyber-send-btn"
+                disabled={!hasText || isSendingText}
+                aria-label={isSendingText ? "Sending message" : "Send message"}
+                onClick={() => void handleSend()}
+              >
+                {isSendingText ? (
+                  <LoaderIcon className="size-4 animate-spin" strokeWidth={2} aria-hidden />
+                ) : (
+                  <SendHorizontalIcon className="size-4" strokeWidth={2.25} />
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}

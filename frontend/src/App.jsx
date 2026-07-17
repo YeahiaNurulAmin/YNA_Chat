@@ -1,4 +1,4 @@
-import { WallpaperProvider } from "./context/WallpaperContext";
+import { RgbProvider } from "./context/RgbContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Navigate, Route, Routes } from "react-router";
 import ChatPage from "./pages/ChatPage";
@@ -7,10 +7,12 @@ import { useAuth } from "@clerk/react";
 import PageLoader from "./components/PageLoader";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
+import { useCallStore } from "./store/useCallStore";
 import { useEffect } from "react";
 
 import { Toaster } from "react-hot-toast";
 import { setAuthTokenGetter } from "./lib/axios";
+import { AudioCallModal } from "./components/chat/AudioCallModal";
 
 function App() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
@@ -57,11 +59,43 @@ function App() {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingCall = (payload) => {
+      useCallStore.getState().handleIncomingCall(payload);
+    };
+
+    const handleCallAccepted = () => {
+      void useCallStore.getState().handleCallAccepted();
+    };
+
+    const handleCallRejected = () => {
+      useCallStore.getState().handleCallRejected();
+    };
+
+    const handleCallEnded = (payload) => {
+      void useCallStore.getState().handleCallEnded(payload);
+    };
+
+    socket.on("call:incoming", handleIncomingCall);
+    socket.on("call:accepted", handleCallAccepted);
+    socket.on("call:rejected", handleCallRejected);
+    socket.on("call:ended", handleCallEnded);
+
+    return () => {
+      socket.off("call:incoming", handleIncomingCall);
+      socket.off("call:accepted", handleCallAccepted);
+      socket.off("call:rejected", handleCallRejected);
+      socket.off("call:ended", handleCallEnded);
+    };
+  }, [socket]);
+
   if (!isLoaded || (isSignedIn && isCheckingAuth)) return <PageLoader />;
 
   return (
     <ThemeProvider>
-      <WallpaperProvider>
+      <RgbProvider>
         <Routes>
           <Route path="/" element={isSignedIn ? <ChatPage /> : <Navigate to={"/auth"} replace />} />
           <Route
@@ -69,8 +103,9 @@ function App() {
             element={!isSignedIn ? <AuthPage /> : <Navigate to={"/"} replace />}
           />
         </Routes>
+        <AudioCallModal />
         <Toaster />
-      </WallpaperProvider>
+      </RgbProvider>
     </ThemeProvider>
   );
 }

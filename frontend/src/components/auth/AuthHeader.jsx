@@ -1,22 +1,22 @@
 import { APP_NAME, AppLogo } from "../AppLogo";
 import { ThemePresetPicker } from "../ThemePresetPicker";
 import { ThemeToggle } from "../ThemeToggle";
-import { WallpaperPicker } from "../WallpaperPicker";
+import { RgbCustomizer } from "../RgbCustomizer";
 
 function AuthHeader() {
   return (
-    <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-black/10 bg-[#F6F6F6]/95 px-3 py-2 backdrop-blur-md dark:border-white/10 dark:bg-[#1C1C1E]/95">
+    <header className="glass-header rgb-accent-line sticky top-0 z-10 flex shrink-0 items-center gap-2 rounded-t-[21px] px-3 py-2">
       <div className="flex flex-1 items-center gap-2.5 px-1">
-        <AppLogo size={52} className="rounded-[7px]" alt="" />
+        <AppLogo size={52} className="rounded-[7px] ring-1 ring-white/10" alt="" />
 
         <div>
-          <p className="truncate text-[15px] font-semibold leading-tight">{APP_NAME}</p>
-          <p className="truncate text-xs text-[#8E8E93] dark:text-[#98989D]">Private session</p>
+          <p className="brand-title truncate text-[15px] font-semibold leading-tight">{APP_NAME}</p>
+          <p className="truncate text-xs text-muted">Private session</p>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
-        <WallpaperPicker />
+      <div className="toolbar-cluster shrink-0">
+        <RgbCustomizer />
 
         <ThemePresetPicker />
 
