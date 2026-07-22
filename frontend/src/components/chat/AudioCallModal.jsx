@@ -62,6 +62,9 @@ export function AudioCallModal() {
         <Modal.Container size="sm">
           <Modal.Dialog className="items-center text-center">
             <Modal.Header className="flex w-full flex-col items-center gap-3 pb-2">
+              <div className="flex w-full justify-end">
+                <Modal.CloseTrigger />
+              </div>
               {peer ? (
                 <Avatar className="size-20">
                   <Avatar.Image alt={peer.name} src={peer.avatarUrl} />

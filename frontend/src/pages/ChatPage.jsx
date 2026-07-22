@@ -25,7 +25,9 @@ function ChatPage() {
   useEffect(() => {
     getUsers();
     getConversations();
-    void fetchLocationConfig();
+    void fetchLocationConfig().catch((error) => {
+      console.error("Failed to load location config:", error);
+    });
   }, [getConversations, getUsers]);
 
   useEffect(() => {
