@@ -24,6 +24,7 @@ function App() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const authUser = useAuthStore((state) => state.authUser);
   const socket = useAuthStore((state) => state.socket);
 
   useEffect(() => {
@@ -92,6 +93,25 @@ function App() {
   }, [socket]);
 
   if (!isLoaded || (isSignedIn && isCheckingAuth)) return <PageLoader />;
+
+  // Clerk says signed-in, but backend sync failed (often clock skew).
+  if (isSignedIn && !authUser) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#030306] px-6 text-center text-[#e4e1e9]">
+        <p className="max-w-md text-sm leading-relaxed text-[#b9cacb]">
+          Could not sync your session with the server. This is usually caused by an inaccurate
+          Windows system clock (Clerk JWT not active yet). Sync your time, then retry.
+        </p>
+        <button
+          type="button"
+          className="rounded-full bg-[#00f2ff] px-5 py-2.5 text-sm font-semibold text-[#00363a]"
+          onClick={() => void checkAuth()}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>
