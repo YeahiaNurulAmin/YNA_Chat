@@ -1,6 +1,6 @@
 # YNA Chat
 
-A full-stack, real-time 1:1 messaging application with rich media support, location sharing, live location tracking, and a polished customizable UI. Built as a monolith-friendly architecture: a React SPA talks to an Express API and Socket.io server, with MongoDB for persistence and Clerk for authentication.
+A full-stack, real-time 1:1 messaging and WebRTC audio calling application with rich media support, location sharing, live location tracking, customizable RGB lighting effects, and a polished modern UI. Built as a monolith-friendly architecture: a React SPA talks to an Express API and Socket.io server, with MongoDB for persistence, Clerk for authentication, ImageKit for media CDN, and LiveKit for WebRTC audio calls.
 
 ---
 
@@ -18,41 +18,56 @@ A full-stack, real-time 1:1 messaging application with rich media support, locat
 - [Authentication](#authentication)
 - [API Reference](#api-reference)
 - [Real-Time Events (Socket.io)](#real-time-events-socketio)
+- [Audio Calling (LiveKit & WebRTC)](#audio-calling-livekit--webrtc)
 - [Location System](#location-system)
 - [Media Uploads](#media-uploads)
 - [Frontend State & UX](#frontend-state--ux)
-- [UI Customization](#ui-customization)
+- [UI Customization & RGB Engine](#ui-customization--rgb-engine)
 - [Docker Deployment](#docker-deployment)
 - [Production Notes](#production-notes)
 - [Roadmap](#roadmap)
+- [Scripts Reference](#scripts-reference)
+- [License](#license)
+- [Summary](#summary)
 
 ---
 
 ## Overview
 
-**YNA Chat** is a modern chat application designed for direct (1:1) conversations between registered users. Each user signs in through [Clerk](https://clerk.com); their profile is synced into MongoDB so the app can store messages, track read receipts, and power the sidebar.
+**YNA Chat** is a modern chat and WebRTC audio calling application designed for direct (1:1) communication between registered users. Each user signs in through [Clerk](https://clerk.com); their profile is automatically synced into MongoDB so the app can store messages, track read receipts, power the sidebar, and manage active voice calls.
 
 The app supports:
 
-- Text messages with replies
-- Images, videos, audio files, documents, and voice notes
-- Static map pins and continuous live location sharing
-- Online presence indicators
-- Unread counts, browser notifications, and optional sound alerts
-- Light/dark mode, theme presets, and chat wallpapers
+- **1:1 Voice Calls** over WebRTC via LiveKit with instant Socket.io signaling and Web Audio ring/call sounds
+- **Text messages** with reply-to quoting and deletion options
+- **Rich media** attachments: images, videos, audio files, documents, and interactive voice notes
+- **Static map pins** and continuous live location tracking sessions with distance deduplication
+- **Online presence indicators** showing real-time socket connectivity
+- **Unread counts**, browser desktop notifications, and optional keystroke/message audio alerts
+- **Cyber Luxe glassmorphism UI**, theme presets, customizable chat wallpapers, and an adjustable RGB lighting engine
 
-In **development**, the frontend (Vite on port `5173`) and backend (Express on port `3000`) run separately. In **production**, a single Docker image serves the built React app as static files from Express while the API and WebSocket server run on the same host.
+In **development**, the frontend (Vite on port `5173`) and backend (Express on port `3000`) run separately. In **production**, a single multi-stage Docker image serves the built React app as static files from Express while the REST API, Socket.io server, and LiveKit room token generator run on the same host.
 
 ---
 
 ## Features
 
+### WebRTC Audio Calls
+
+| Feature | Description |
+|---------|-------------|
+| **1:1 Voice Calls** | High-fidelity WebRTC audio calling powered by LiveKit SFU infrastructure |
+| **Real-time Signaling** | Socket.io signaling for `call:incoming`, `call:accepted`, `call:rejected`, and `call:ended` |
+| **In-App Call Modal** | Full-screen interactive incoming/outgoing/active call modal with call duration timer |
+| **Synthesized Audio Effects** | Web Audio API generated ringback tones, incoming ringtones, and connection sounds |
+| **Call Controls** | Microphones toggle (mute/unmute), speaker/volume control, and defensive call termination |
+
 ### Messaging
 
 | Feature | Description |
 |---------|-------------|
-| **1:1 conversations** | Chat with any other registered user |
-| **Text messages** | Plain text with optional reply-to quoting |
+| **1:1 conversations** | Chat with any registered user in real-time |
+| **Text messages** | Plain text with optional reply-to message quoting |
 | **Rich media** | Up to 10 files per message: images, videos, audio, PDFs, Office docs, plain text |
 | **Voice notes** | Record, preview, and send voice messages (hold-to-record or tap mode) |
 | **Message actions** | Delete your own messages; forward messages to another user |
@@ -63,7 +78,7 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 
 | Feature | Description |
 |---------|-------------|
-| **Static location** | Pick a point on a map or use device GPS; reverse-geocoded label when configured |
+| **Static location** | Pick a point on an interactive map or use device GPS; reverse-geocoded address label |
 | **Live location** | Share position on an interval (1s – 1hr presets); updates deduplicated by distance and rate |
 | **Emergency live location** | Long-press the location button for a dedicated live-sharing session with elapsed timer |
 | **Live location grouping** | Consecutive live pings from the same session are grouped in the message list |
@@ -83,9 +98,10 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 
 | Feature | Description |
 |---------|-------------|
-| **Responsive layout** | Sidebar + chat panel; mobile-friendly conversation switching |
+| **Cyber Luxe Glassmorphism** | Modern dark/light glass aesthetics, high-end micro-animations |
+| **RGB Lighting Engine** | Custom animated RGB glowing aura borders with control over animation speed and brightness |
 | **HeroUI components** | Buttons, inputs, and design system from `@heroui/react` |
-| **Theme presets** | Multiple color presets (Sky, Spotify-style, etc.) |
+| **Theme presets** | Multiple color presets (Sky, Spotify-style, Cyberpunk, etc.) |
 | **Light / dark mode** | System preference or manual toggle |
 | **Wallpapers** | Frame and chat background wallpapers |
 
@@ -100,25 +116,27 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 | [React 19](https://react.dev/) | UI framework |
 | [Vite 8](https://vite.dev/) | Dev server and build tool |
 | [React Router 8](https://reactrouter.com/) | Client-side routing (`/`, `/auth`) |
-| [Zustand](https://zustand.docs.pmnd.rs/) | Global state (`useAuthStore`, `useChatStore`) |
-| [Clerk React](https://clerk.com/docs/references/react/overview) | Sign-in, sign-up, session tokens |
-| [Socket.io Client](https://socket.io/) | Real-time messages and presence |
+| [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state management (`useAuthStore`, `useChatStore`, `useCallStore`) |
+| [Clerk React](https://clerk.com/docs/references/react/overview) | Authentication and session token handling |
+| [Socket.io Client](https://socket.io/) | Real-time messages, presence, and call signaling |
+| [LiveKit Client](https://docs.livekit.io/) | WebRTC room connection and audio track publishing/subscribing |
 | [Axios](https://axios-http.com/) | HTTP client with Clerk JWT interceptor |
-| [HeroUI](https://www.heroui.com/) + [Tailwind CSS 4](https://tailwindcss.com/) | UI components and styling |
+| [HeroUI](https://www.heroui.com/) + [Tailwind CSS 4](https://tailwindcss.com/) | Design system and styling |
 | [Leaflet](https://leafletjs.com/) | Map picker and location message display |
 | [Lucide React](https://lucide.dev/) | Icons |
 | [React Hot Toast](https://react-hot-toast.com/) | Toast notifications |
-| React Compiler (Babel plugin) | Automatic memoization |
+| React Compiler (Babel plugin) | Automatic component memoization |
 
 ### Backend (`backend/`)
 
 | Technology | Purpose |
 |------------|---------|
-| [Node.js](https://nodejs.org/) (ES modules) | Runtime |
-| [Express 5](https://expressjs.com/) | HTTP API |
-| [Socket.io](https://socket.io/) | WebSocket server for real-time events |
+| [Node.js](https://nodejs.org/) (ES modules) | Runtime environment |
+| [Express 5](https://expressjs.com/) | HTTP REST API |
+| [Socket.io](https://socket.io/) | WebSocket server for real-time events & signaling |
+| [LiveKit Server SDK](https://docs.livekit.io/) | Access token generation and LiveKit room administration |
 | [MongoDB](https://www.mongodb.com/) + [Mongoose 9](https://mongoosejs.com/) | Database and ODM |
-| [Clerk Express](https://clerk.com/docs/references/express/overview) | JWT verification and user API |
+| [Clerk Express](https://clerk.com/docs/references/express/overview) | JWT verification and user sync |
 | [Multer](https://github.com/expressjs/multer) | In-memory multipart uploads |
 | [ImageKit](https://imagekit.io/) | Cloud media storage and CDN URLs |
 | [node-cron](https://github.com/node-cron/node-cron) | Production keep-alive health pings |
@@ -128,50 +146,49 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Browser (Client)                        │
-│  React SPA · Clerk · Zustand · Socket.io Client · Axios         │
-└───────────────┬─────────────────────────────┬───────────────────┘
-                │ REST  /api/*                 │ WebSocket
-                │ Bearer JWT (Clerk)           │ ?userId=<mongoId>
-                ▼                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Express + Socket.io (Server)                   │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────────┐ │
-│  │ Auth routes │  │ Message API  │  │ Location service        │ │
-│  │ Clerk hook  │  │ ImageKit     │  │ OSM maps · geocoding    │ │
-│  └─────────────┘  └──────────────┘  └─────────────────────────┘ │
-└───────────────┬─────────────────────────────┬─────────────────────┘
-                │                             │
-                ▼                             ▼
-         ┌─────────────┐              ┌─────────────┐
-         │   MongoDB   │              │  ImageKit   │
-         │ Users       │              │  (media CDN)│
-         │ Messages    │              └─────────────┘
-         │ LiveLocation│
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                Browser (Client)                                 │
+│  React SPA · Clerk · Zustand · Socket.io Client · LiveKit Client · Axios       │
+└───────────────┬───────────────────────┬────────────────────────┬────────────────┘
+                │ REST /api/*           │ WebSocket (Signaling)   │ WebRTC Audio
+                │ Bearer JWT (Clerk)     │ ?userId=<mongoId>      │ (SRTP / UDP)
+                ▼                       ▼                        │
+┌────────────────────────────────────────────────────────┐       │
+│               Express + Socket.io (Server)             │       │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐ │       │
+│  │ Auth routes │  │ Messages API │  │ Location Svc   │ │       │
+│  ├─────────────┤  ├──────────────┤  ├────────────────┤ │       │
+│  │ Clerk hook  │  │ LiveKit SDK  │  │ Call Signaling │ │       │
+│  └─────────────┘  └──────────────┘  └────────────────┘ │       │
+└───────────────┬───────────────────────┬────────────────┘       │
+                │                       │                        │
+                ▼                       ▼                        ▼
+         ┌─────────────┐         ┌─────────────┐          ┌──────────────┐
+         │   MongoDB   │         │  ImageKit   │          │ LiveKit Server│
+         │ Users       │         │ (Media CDN) │          │ (Cloud / SFU)│
+         │ Messages    │         └─────────────┘          └──────────────┘
          │ Sessions    │
          └─────────────┘
                 ▲
-                │ Clerk webhooks (user.created / updated / deleted)
+                │ Clerk Webhooks
          ┌─────────────┐
          │    Clerk    │
          └─────────────┘
 ```
 
-### Request flow (authenticated API)
+### Request Flow (Authenticated API)
 
 1. User signs in via Clerk on the frontend.
 2. `App.jsx` registers `getToken` with the Axios interceptor.
 3. Every API request sends `Authorization: Bearer <clerk_jwt>`.
 4. `protectRoute` middleware reads the Clerk session, resolves the MongoDB user via `findOrSyncUser`, and attaches `req.user`.
-5. Controllers read/write MongoDB and optionally emit Socket.io events.
+5. Controllers execute business logic and emit real-time Socket.io events.
 
-### Message delivery flow
+### Message & Signaling Flow
 
-1. Sender POSTs to `/api/messages/send/:receiverId` (or location endpoints).
-2. Message is saved to MongoDB via `deliverMessage()`.
-3. If the receiver has an active socket, `newMessage` is emitted to their socket ID.
-4. Frontend `useChatStore.handleIncomingMessage` updates messages, unread counts, and triggers alerts.
+1. **Messages:** Sent via REST endpoints (`/api/messages/send/:receiverId`). Messages are saved in MongoDB and emitted directly over Socket.io to the receiver's socket ID.
+2. **Audio Call Signaling:** Initiated via `/api/calls/invite`. The backend mints a LiveKit room token, emits `call:incoming` via Socket.io, and manages call lifecycle events (`accept`, `reject`, `end`, `cancel`).
+3. **WebRTC Media:** Once connected, raw WebRTC audio flows directly between clients and the LiveKit SFU server.
 
 ---
 
@@ -179,7 +196,7 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 
 ```
 YNA_Chat/
-├── Dockerfile                 # Multi-stage: build frontend + backend, serve monolith
+├── Dockerfile                 # Multi-stage build: frontend SPA + Express backend monolith
 ├── .dockerignore
 ├── .gitignore
 │
@@ -187,14 +204,15 @@ YNA_Chat/
 │   ├── .env.example
 │   ├── package.json
 │   └── src/
-│       ├── server.js              # Express app entry, routes, static SPA in production
+│       ├── server.js              # Express app entry, route registration, static server
 │       ├── controllers/
 │       │   ├── authControl.js     # GET /auth/check
 │       │   ├── messageControl.js  # Users, conversations, messages, send, delete, forward
-│       │   └── locationControl.js # Static + live location endpoints
+│       │   ├── locationControl.js # Static + live location endpoints
+│       │   └── callControl.js     # LiveKit token minting, call invite/accept/reject/end
 │       ├── Middlewares/
-│       │   ├── authMiddelware.js  # Clerk JWT → MongoDB user
-│       │   └── updateMiddelware.js# Multer upload config (25MB, allowed MIME types)
+│       │   ├── authMiddelware.js  # Clerk JWT → MongoDB user resolution
+│       │   └── updateMiddelware.js# Multer upload config (25MB limit)
 │       ├── models/
 │       │   ├── User.js
 │       │   ├── Message.js
@@ -202,19 +220,22 @@ YNA_Chat/
 │       ├── routes/
 │       │   ├── authRoute.js
 │       │   ├── messageRoute.js
-│       │   └── locationRoute.js
+│       │   ├── locationRoute.js
+│       │   └── callRoute.js
 │       ├── lib/
-│       │   ├── db.js              # MongoDB connection + readAt migration
-│       │   ├── socket.js          # Socket.io server + online user map
+│       │   ├── db.js              # MongoDB connection + readAt backfill trigger
+│       │   ├── socket.js          # Socket.io server & online user map
 │       │   ├── deliverMessage.js  # Save + socket emit helpers
-│       │   ├── imagekit.js        # Media upload to ImageKit
-│       │   ├── syncClerkUser.js   # Clerk ↔ MongoDB user sync
+│       │   ├── imagekit.js        # Media upload integration
+│       │   ├── livekit.js         # LiveKit AccessToken generator & room deletion
+│       │   ├── callSignaling.js   # Active calls map & Socket.io call handlers
+│       │   ├── syncClerkUser.js   # Clerk ↔ MongoDB profile sync
 │       │   ├── cron.js            # Production keep-alive pings
 │       │   └── location/
 │       │       └── parseLocation.js
 │       ├── services/location/
-│       │   ├── locationService.js # Static + live location business logic
-│       │   └── providers/         # Map tiles (OSM) and geocoding (noop / Nominatim)
+│       │   ├── locationService.js # Static & live location business logic
+│       │   └── providers/         # Map tiles (OSM) and geocoding providers
 │       ├── webhooks/
 │       │   └── clerkWebhookMiddleware.js
 │       ├── migrations/
@@ -228,35 +249,45 @@ YNA_Chat/
     ├── vite.config.js
     ├── index.html
     └── src/
-        ├── main.jsx               # ClerkProvider + BrowserRouter
-        ├── App.jsx                # Auth gate, socket listeners, routes
+        ├── main.jsx               # ClerkProvider + BrowserRouter entry
+        ├── App.jsx                # Auth gate, socket listeners, call listeners, layout
+        ├── index.css              # Cyber Luxe global styles & animations
         ├── pages/
         │   ├── ChatPage.jsx
         │   └── AuthPage.jsx
         ├── store/
-        │   ├── useAuthStore.js    # authUser, socket, onlineUsers
-        │   └── useChatStore.js    # messages, conversations, send/receive logic
+        │   ├── useAuthStore.js    # authUser, socket instance, onlineUsers
+        │   ├── useChatStore.js    # messages, conversations, active chat, send/receive
+        │   └── useCallStore.js    # activeCall, call status, duration, audio controls
         ├── components/
-        │   ├── auth/              # Sign-in UI panels
-        │   └── chat/              # Sidebar, composer, message bubbles, modals
+        │   ├── AppLogo.jsx
+        │   ├── PageLoader.jsx
+        │   ├── RgbCustomizer.jsx  # RGB lighting engine settings modal
+        │   ├── ThemePresetPicker.jsx
+        │   ├── ThemeToggle.jsx
+        │   ├── auth/              # Auth layout & sign-in panels
+        │   └── chat/              # AudioCallModal, ChatSidebar, ChatComposer, MessageBubble, etc.
         ├── context/
         │   ├── ThemeContext.jsx
+        │   ├── RgbContext.jsx     # RGB state (preset, speed, opacity, glow)
         │   └── WallpaperContext.jsx
-        ├── hooks/                 # Voice recorder, keyboard sound, unread title, etc.
-        ├── lib/                   # axios, media, location, notifications
-        └── data/                  # Theme presets, wallpapers
+        ├── hooks/                 # useLivekitCall, useCallSounds, useVoiceRecorder, etc.
+        ├── lib/                   # axios, callApi, locationApi, media, notifications
+        ├── styles/                # cyber-luxe-glass.css, heroui-theme-presets.css
+        └── data/                  # rgbPresets.js, theme presets, wallpapers
 ```
 
 ---
 
 ## Prerequisites
 
-- **Node.js** 22+ (used in Dockerfile; 20+ should work locally)
+- **Node.js** 22+ (recommended for backend and production Docker container; 20+ works locally)
 - **npm**
 - **MongoDB** — local instance or [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
 - **Clerk** account — [dashboard.clerk.com](https://dashboard.clerk.com)
 - **ImageKit** account — required for media uploads ([imagekit.io](https://imagekit.io))
-- (Optional) **Nominatim** or other geocoding if you want address labels on location pins
+- **LiveKit Cloud** account — required for WebRTC audio calls ([cloud.livekit.io](https://cloud.livekit.io))
+- (Optional) **Nominatim** for reverse-geocoded location labels
 
 ---
 
@@ -271,34 +302,40 @@ PORT=3000
 MONGODB_URI=mongodb://127.0.0.1:27017/yna_chat
 FRONTEND_URL=http://localhost:5173
 
-# Clerk
+# Clerk Authentication
 CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 
-# ImageKit (required for media messages)
+# ImageKit Media Storage
 IMAGEKIT_PRIVATE_KEY=private_...
 
-# Location providers (optional)
+# LiveKit WebRTC Audio Calls (Optional for text/media; required for audio calls)
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=API...
+LIVEKIT_API_SECRET=Secret...
+
+# Location Services (Optional)
 MAP_LINK_PROVIDER=openstreetmap          # default
 GEOCODING_PROVIDER=noop                  # noop | nominatim
 NOMINATIM_BASE_URL=https://nominatim.openstreetmap.org
 NOMINATIM_USER_AGENT=YNA_Chat/1.0
 
-# Production keep-alive (optional; Render sets RENDER_EXTERNAL_URL automatically)
-# APP_URL=https://your-app.onrender.com
+# Environment Mode
 NODE_ENV=development
 ```
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `MONGODB_URI` | Yes | MongoDB connection string |
-| `CLERK_SECRET_KEY` | Yes | Clerk backend secret |
-| `CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key (used by `@clerk/express`) |
-| `CLERK_WEBHOOK_SIGNING_SECRET` | Yes (prod) | Verifies Clerk webhook payloads |
-| `IMAGEKIT_PRIVATE_KEY` | Yes (for media) | Without this, text-only messages work; media returns 500 |
-| `FRONTEND_URL` | Dev | CORS origin for API and Socket.io |
-| `GEOCODING_PROVIDER` | No | Set to `nominatim` for reverse-geocoded location labels |
+| `CLERK_SECRET_KEY` | Yes | Clerk backend secret key |
+| `CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
+| `CLERK_WEBHOOK_SIGNING_SECRET` | Yes (prod) | Verifies Clerk webhook signature |
+| `IMAGEKIT_PRIVATE_KEY` | Yes (media) | Required for image/video/audio attachments |
+| `LIVEKIT_URL` | Yes (calls) | WebSocket URL for LiveKit Cloud or SFU server |
+| `LIVEKIT_API_KEY` | Yes (calls) | LiveKit API Key for minting room tokens |
+| `LIVEKIT_API_SECRET` | Yes (calls) | LiveKit API Secret for signature verification |
+| `FRONTEND_URL` | Dev | CORS allowed origin for dev server |
 
 ### Frontend (`frontend/.env`)
 
@@ -306,75 +343,60 @@ Copy `frontend/.env.example` to `frontend/.env`:
 
 ```env
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
 ```
 
-In development, the API base URL is hardcoded to `http://localhost:3000/api`. In production builds, requests go to `/api` on the same host (monolith).
+In development, REST API calls are directed to `http://localhost:3000/api`. In production builds, requests use relative `/api` paths on the host origin.
 
 ---
 
 ## Local Development
 
-### 1. Clone and install dependencies
+### 1. Clone & Install Dependencies
 
 ```bash
 git clone <repository-url>
 cd YNA_Chat
 
+# Install backend dependencies
 cd backend && npm install
+
+# Install frontend dependencies
 cd ../frontend && npm install
 ```
 
-### 2. Configure environment
+### 2. Configure Environment
 
-- Create `backend/.env` and `frontend/.env` as described above.
-- In the **Clerk Dashboard**:
-  - Create an application and copy the publishable + secret keys.
+- Populate `backend/.env` and `frontend/.env` using the templates above.
+- In **Clerk Dashboard**:
   - Add `http://localhost:5173` as an allowed origin.
-  - Configure a webhook endpoint: `http://localhost:3000/api/webhooks/clerk` (use [ngrok](https://ngrok.com/) or similar for local webhook testing).
-  - Subscribe to `user.created`, `user.updated`, and `user.deleted`.
+  - Set up a webhook pointing to `http://localhost:3000/api/webhooks/clerk` for `user.created`, `user.updated`, `user.deleted`.
 
-### 3. Start MongoDB
+### 3. Start Database & (Optional) Seed Users
 
 ```bash
-# Example: local MongoDB
+# Start MongoDB locally or use Atlas connection string
 mongod
+
+# Seed 20 test profiles for UI testing
+cd backend && npm run seed
 ```
 
-Or use a MongoDB Atlas connection string in `MONGODB_URI`.
-
-### 4. (Optional) Seed demo users
-
-```bash
-cd backend
-npm run seed
-```
-
-This upserts 20 fictional users (e.g. Alex Chen, Sam Taylor) with `clerkId` values like `seed_alex_chen`. These are useful for UI development but **cannot sign in via Clerk** unless you create matching Clerk users. Real users are created when someone signs up through Clerk (webhook or first API call sync).
-
-### 5. Run the dev servers
+### 4. Start Development Servers
 
 **Terminal 1 — Backend:**
-
 ```bash
 cd backend
 npm run dev
 ```
 
-Runs Express with `--watch` on port `3000`.
-
 **Terminal 2 — Frontend:**
-
 ```bash
 cd frontend
 npm run dev
 ```
 
-Opens Vite on `http://localhost:5173`.
-
-### 6. Verify
-
-- Visit `http://localhost:5173` → redirected to `/auth` if not signed in.
-- Health check: `GET http://localhost:3000/health`
+Visit `http://localhost:5173` in your browser. Verify backend health at `http://localhost:3000/health`.
 
 ---
 
@@ -384,311 +406,177 @@ Opens Vite on `http://localhost:5173`.
 
 | Collection | Model | Purpose |
 |------------|-------|---------|
-| `users` | `User` | Profile synced from Clerk (`clerkId`, `fullName`, `email`, `profilePicture`, social fields) |
-| `messages` | `Message` | All chat messages and metadata |
-| `livelocationsessions` | `LiveLocationSession` | Active/stopped live location sharing sessions |
-
-### Message schema highlights
-
-- `senderId` / `receiverId` — MongoDB ObjectIds referencing `User`
-- `text`, `image[]`, `video[]`, `voice[]`, `audio[]`, `document[]` — content fields
-- `location` — `{ latitude, longitude, accuracy?, capturedAt?, label? }`
-- `isLiveLocation`, `liveSessionId` — live location messages
-- `readAt` — `null` until the receiver reads the conversation
-- `replyTo` — `{ messageId, text, senderName }` for quoted replies
-- `createdAt` / `updatedAt` — automatic timestamps
-
-### Migrations
-
-On startup, `backfillReadAt` runs once to normalize legacy messages missing `readAt`. Failures are logged but do not block the server.
-
-### Seed script
-
-```bash
-cd backend && npm run seed
-```
+| `users` | `User` | Profile synced from Clerk (`clerkId`, `fullName`, `email`, `profilePicture`) |
+| `messages` | `Message` | Chat messages, media metadata, and location pings |
+| `livelocationsessions` | `LiveLocationSession` | Live location tracking session states |
 
 ---
 
 ## Authentication
 
-YNA Chat uses **Clerk** for identity and **MongoDB** for application profiles.
+YNA Chat combines **Clerk** for identity management with **MongoDB** for persistent application profiles.
 
-### User sync paths
-
-1. **Clerk webhook** (`POST /api/webhooks/clerk`) — handles `user.created`, `user.updated`, `user.deleted`.
-2. **Lazy sync** — on any authenticated request, `findOrSyncUser(clerkId)` fetches the Clerk user and upserts MongoDB if missing.
-
-### Protected routes
-
-All `/api/auth/check`, `/api/messages/*`, and `/api/location/*` routes use `protectRoute`, which:
-
-1. Reads `userId` from the Clerk session (`getAuth(req)`).
-2. Loads or creates the MongoDB `User` document.
-3. Sets `req.user` (without exposing `clerkId` in most responses).
-
-### Frontend auth flow
-
-1. `ClerkProvider` wraps the app in `main.jsx`.
-2. `App.jsx` calls `checkAuth()` when `isSignedIn`, which hits `GET /api/auth/check`.
-3. On success, `connectSocket(user)` opens a Socket.io connection with `query: { userId: user._id }`.
-4. On sign-out, `clearAuth()` disconnects the socket.
+1. **Webhook Sync (`POST /api/webhooks/clerk`):** Synchronizes user creation, updates, and deletions automatically.
+2. **Lazy Sync (`findOrSyncUser`):** Any authenticated API call checks and syncs the MongoDB user record if missing.
+3. **Protected Middleware (`protectRoute`):** Validates Clerk JWT tokens on `/api/auth/check`, `/api/messages/*`, `/api/location/*`, and `/api/calls/*`.
 
 ---
 
 ## API Reference
 
-Base URL: `http://localhost:3000/api` (development) or `/api` (production).
+Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except `/health` and `/webhooks/clerk`) require `Authorization: Bearer <clerk_jwt>`.
 
-All endpoints below require `Authorization: Bearer <clerk_jwt>` unless noted.
-
-### Health
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/health` | No | Server health check |
-
-### Auth
+### Health & Auth
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/auth/check` | Returns the current MongoDB user profile |
+| `GET` | `/health` | Server health status |
+| `GET` | `/auth/check` | Returns current MongoDB user profile |
 
 ### Messages
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/messages/users` | All users except self (for starting new chats) |
-| `GET` | `/messages/conversations` | Sidebar list with last message and unread counts |
-| `GET` | `/messages/:userId` | Message history with a user; marks incoming as read |
-| `POST` | `/messages/send/:receiverId` | Send text, media (`media` field, up to 10), or voice (`voice` field) |
-| `PATCH` | `/messages/read/:peerId` | Mark all messages from `peerId` as read |
-| `DELETE` | `/messages/item/:messageId` | Delete own message |
-| `POST` | `/messages/forward/:messageId` | Forward message to `{ receiverId }` |
-
-**Send message examples:**
-
-```bash
-# Text
-POST /api/messages/send/<receiverId>
-Content-Type: application/json
-{ "text": "Hello!", "replyTo": { "messageId": "...", "text": "...", "senderName": "..." } }
-
-# Media (multipart)
-POST /api/messages/send/<receiverId>
-Content-Type: multipart/form-data
-media: <file1>, <file2>, ...
-
-# Voice note
-POST /api/messages/send/<receiverId>
-Content-Type: multipart/form-data
-voice: <audio.webm>
-```
+| `GET` | `/messages/users` | List all users except self |
+| `GET` | `/messages/conversations` | Sidebar conversations with last message & unread count |
+| `GET` | `/messages/:userId` | Conversation history with user |
+| `POST` | `/messages/send/:receiverId` | Send text, media, or voice message |
+| `PATCH` | `/messages/read/:peerId` | Mark conversation messages as read |
+| `DELETE` | `/messages/item/:messageId` | Delete user's own message |
+| `POST` | `/messages/forward/:messageId` | Forward message to target user |
 
 ### Location
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/location/config` | Map provider, tile layer, limits, frequency presets |
-| `POST` | `/location/send/:receiverId` | Send a static location pin |
-| `GET` | `/location/live/active` | Get caller's active live session, if any |
-| `POST` | `/location/live/start` | Start live sharing `{ receiverId, intervalMs }` |
-| `POST` | `/location/live/:sessionId/ping` | Send a live location update `{ location, force? }` |
-| `POST` | `/location/live/:sessionId/stop` | Stop session `{ sendEndMessage?: true }` |
+| `GET` | `/location/config` | Provider settings, tile URL, and frequency limits |
+| `POST` | `/location/send/:receiverId` | Send static location pin |
+| `GET` | `/location/live/active` | Retrieve active live location session |
+| `POST` | `/location/live/start` | Start live location session |
+| `POST` | `/location/live/:sessionId/ping` | Send live location ping |
+| `POST` | `/location/live/:sessionId/stop` | End live location session |
 
-### Webhooks (no Bearer token)
+### Audio Calls (LiveKit)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/webhooks/clerk` | Clerk user lifecycle events (raw JSON body) |
+| `POST` | `/calls/invite` | Initiate voice call, generate LiveKit room token & emit `call:incoming` |
+| `POST` | `/calls/accept` | Accept incoming call & generate callee LiveKit token |
+| `POST` | `/calls/reject` | Reject call & inform caller |
+| `POST` | `/calls/end` | End active or ringing call & clean up room |
 
 ---
 
 ## Real-Time Events (Socket.io)
 
-Connection URL: `http://localhost:3000` (dev) or same origin (prod).  
-Query parameter: `userId=<mongodb_user_id>`.
-
 ### Server → Client
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `getOnlineUsers` | `string[]` (user IDs) | Broadcast whenever the online set changes |
-| `newMessage` | `Message` object | New message for the connected receiver |
-| `messageDeleted` | `{ messageId }` | Message was deleted (sent to both participants) |
+| `getOnlineUsers` | `string[]` (User IDs) | Broadcast online user list |
+| `newMessage` | `Message` object | Incoming chat message |
+| `messageDeleted` | `{ messageId }` | Notification of deleted message |
+| `call:incoming` | `{ callId, callerId, callerName, callerAvatar }` | Trigger incoming call modal |
+| `call:accepted` | `{ callId, roomName, token }` | Callee accepted; connect caller to LiveKit room |
+| `call:rejected` | `{ callId }` | Callee rejected the call |
+| `call:ended` | `{ callId, roomName, reason }` | Call was ended by peer or timed out |
 
 ### Client → Server
 
-The client only connects and listens; it does not emit custom events. Presence is tracked via the connection `userId` query and disconnect.
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `call:cancel` | — | Caller cancels ringing call |
+| `call:reject` | `{ callId }` | Callee rejects incoming call |
+| `call:end` | `{ callId, roomName }` | Either party ends active call |
+
+---
+
+## Audio Calling (LiveKit & WebRTC)
+
+1. **Invitation:** Caller selects user and clicks call button. Frontend sends `POST /api/calls/invite`.
+2. **Token Generation:** Express backend creates a unique room via `livekit-server-sdk` and mints a JWT token for the caller.
+3. **Signaling:** Socket.io delivers `call:incoming` event to the target user along with synthesized ringtone.
+4. **Acceptance:** Callee clicks Accept -> `POST /api/calls/accept` returns LiveKit room token for callee. Socket.io emits `call:accepted` to caller.
+5. **Media Stream:** Both clients initialize `livekit-client` Room connections to `VITE_LIVEKIT_URL` and enable local audio tracks.
+6. **Defensive Cleanup:** When call ends (`POST /api/calls/end` or socket disconnect), `callSignaling` deletes room on LiveKit server and releases media hardware.
 
 ---
 
 ## Location System
 
-The location feature is implemented as a dedicated **LocationService** with pluggable providers.
-
-### Static location
-
-1. User picks a point (map modal) or uses GPS.
-2. `POST /api/location/send/:receiverId` with `{ location: { latitude, longitude, accuracy?, capturedAt? } }`.
-3. Optional reverse geocoding adds a `label` (requires `GEOCODING_PROVIDER=nominatim`).
-4. Map links (`mapUrl`, `staticMapUrl`) are enriched via the map provider (OpenStreetMap by default).
-
-### Live location
-
-1. `POST /api/location/live/start` creates a `LiveLocationSession` with a UUID `sessionId` and `intervalMs`.
-2. The client periodically calls `POST /api/location/live/:sessionId/ping` with updated coordinates.
-3. Server enforces:
-   - Minimum interval: `max(session.intervalMs, 2000ms)`
-   - Deduplication: skips pings if movement &lt; 5 meters
-   - Rate limit: `429` if pings are too frequent (unless `force: true`)
-4. `POST /api/location/live/:sessionId/stop` ends the session and optionally sends a "Live location sharing ended" text message.
-
-### Limits (`LOCATION_LIMITS`)
-
-| Limit | Value |
-|-------|-------|
-| Min interval | 1 second |
-| Max interval | 24 hours |
-| Min ping gap | 2 seconds |
-| Dedupe distance | 5 meters |
-
-### Frontend: emergency live location
-
-Long-pressing the location button in `ChatComposer` opens `EmergencyLocationModal` and uses `useEmergencyLocationSession` to manage automatic pings until the user stops sharing.
+- **Static Pin:** Click location icon -> pick on Leaflet map or device GPS -> sends coordinates.
+- **Live Location:** Continuous background pings with configurable interval (1s - 1hr). Backend deduplicates movement under 5 meters and rate-limits rapid pings.
+- **Emergency Session:** Long-press location button for automated high-frequency emergency tracking.
 
 ---
 
 ## Media Uploads
 
-- **Storage:** [ImageKit](https://imagekit.io) CDN (`/chat` folder).
-- **Max file size:** 25 MB per file.
-- **Max files per message:** 10 (`media` field) + 1 voice note (`voice` field).
-- **Allowed types:** images, videos, audio, PDF, Word, Excel, PowerPoint, plain text, RTF.
-
-Upload flow:
-
-1. Multer stores files in memory (`updateMiddelware.js`).
-2. `uploadChatMedia()` uploads each file to ImageKit.
-3. URLs are stored in the appropriate array field on the `Message` document.
-
-If `IMAGEKIT_PRIVATE_KEY` is not set, media sends fail with `"Media upload is not configured"`.
+- **Storage CDN:** ImageKit (`/chat` folder).
+- **Limits:** 25MB max per file; up to 10 files per message + 1 voice note.
+- **Supported Formats:** JPG, PNG, GIF, WEBP, MP4, WEBM, MP3, WAV, PDF, DOCX, XLSX, TXT, etc.
 
 ---
 
 ## Frontend State & UX
 
-### `useAuthStore`
-
-| State / Action | Purpose |
-|----------------|---------|
-| `authUser` | Current MongoDB user from `/auth/check` |
-| `socket` | Socket.io instance |
-| `onlineUsers` | Array of online user IDs |
-| `checkAuth` / `clearAuth` | Sync auth with Clerk session |
-
-### `useChatStore` (partially persisted)
-
-Persisted to `localStorage` as `ynachat-storage`: keyboard sound, notification sound, browser notification preference.
-
-| State / Action | Purpose |
-|----------------|---------|
-| `users`, `conversations`, `messages` | Chat data |
-| `selectedUser`, `activeConversationId` | Current chat |
-| `unreadCounts` | Per-conversation unread badges |
-| `sendTextMessage`, `sendMediaMessage`, `sendVoiceMessage` | Outbound messages |
-| `handleIncomingMessage`, `handleMessageDeleted` | Real-time updates |
-| `markConversationRead`, `scheduleMarkConversationRead` | Read receipts (debounced 1s) |
-| `deleteMessage`, `forwardMessage` | Message actions |
-| `replyingTo` | Reply-to state |
-| Live location actions | `startLiveLocationSession`, `pingLiveLocationSession`, `stopLiveLocationSession` |
-
-### Key hooks
-
-| Hook | Purpose |
-|------|---------|
-| `useSelectedConversation` | Derives active conversation, messages, responsive layout |
-| `useUnreadDocumentTitle` | Updates `document.title` with unread count |
-| `useMessageSound` | Plays `message-notification.wav` |
-| `useKeyboardSound` | Random keystroke MP3s while typing |
-| `useVoiceRecorder` | MediaRecorder-based voice notes |
-| `useEmergencyLocationSession` | GPS watch + interval pings for live location |
+- **`useAuthStore`:** Manages Clerk authentication sync, MongoDB profile, socket initialization, and online presence map.
+- **`useChatStore`:** Manages active chat selection, conversation list, message timeline, replies, unread counts, and sound toggles.
+- **`useCallStore`:** Manages WebRTC audio call state (`idle`, `outgoing`, `incoming`, `active`), call timer, mute status, and LiveKit room connection.
 
 ---
 
-## UI Customization
+## UI Customization & RGB Engine
 
-### Themes
-
-- **Light / dark mode** — stored in `localStorage` key `theme`, or follows system preference.
-- **Theme presets** — HeroUI color presets (e.g. Sky, Spotify) stored in `theme-preset`; CSS variables in `heroui-theme-presets.css`.
-
-### Wallpapers
-
-`WallpaperContext` applies frame and chat background styles from presets in `data/wallpapers.js`. Users can change wallpaper via `WallpaperPicker` in the sidebar/header.
+- **RGB Lighting Engine (`RgbContext` & `RgbCustomizer`):** Customizable animated RGB glowing border around the application frame. Options include color presets (Rainbow, Cyber Neon, Gold, Sunset, Matrix), animation speed slider, glow opacity, and border width.
+- **HeroUI & Tailwind 4:** Deep dark/light mode integration with custom glassmorphism styles (`cyber-luxe-glass.css`).
+- **Wallpapers & Themes:** Customizable background wallpapers and theme presets for chat windows.
 
 ---
 
 ## Docker Deployment
 
-The root `Dockerfile` builds a **production monolith**:
-
-1. **Stage 1:** `npm run build` in `frontend/` → static files in `frontend/dist`.
-2. **Stage 2:** `npm run build` in `backend/` → copies `src/` to `dist/`.
-3. **Stage 3:** Production Node image serves API from `dist/server.js` and SPA from `public/` (copied frontend build).
+Build and run a single production monolith container:
 
 ```bash
 docker build \
   --build-arg VITE_CLERK_PUBLISHABLE_KEY=pk_live_... \
+  --build-arg VITE_LIVEKIT_URL=wss://your-project.livekit.cloud \
   -t yna-chat .
 
-docker run -p 3001:3001 \
-  -e MONGODB_URI="..." \
-  -e CLERK_SECRET_KEY="..." \
-  -e CLERK_PUBLISHABLE_KEY="..." \
-  -e IMAGEKIT_PRIVATE_KEY="..." \
+docker run -p 3000:3000 \
+  -e MONGODB_URI="mongodb+srv://..." \
+  -e CLERK_SECRET_KEY="sk_live_..." \
+  -e CLERK_PUBLISHABLE_KEY="pk_live_..." \
+  -e IMAGEKIT_PRIVATE_KEY="private_..." \
+  -e LIVEKIT_URL="wss://..." \
+  -e LIVEKIT_API_KEY="..." \
+  -e LIVEKIT_API_SECRET="..." \
   -e NODE_ENV=production \
   yna-chat
 ```
 
-The container listens on port **3001** by default (`ENV PORT=3001`). Express serves:
-
-- `/api/*` — REST API
-- `/health` — health check
-- `/*` — React SPA (`index.html` fallback)
-
-Set `VITE_API_URL` empty at build time so the browser uses relative `/api` paths.
+The container listens on port `3000` (or `$PORT`), serving API endpoints at `/api/*` and the compiled React SPA static assets for all other routes.
 
 ---
 
 ## Production Notes
 
-### Keep-alive cron
-
-When `NODE_ENV=production`, `startCronJobs()` pings `/health` every 14 minutes. This prevents cold sleeps on free-tier hosts (e.g. Render). Configure `RENDER_EXTERNAL_URL` or `APP_URL` so pings hit the public URL.
-
-### CORS
-
-Set `FRONTEND_URL` to your production frontend origin if frontend and API are on different hosts. In the monolith Docker setup, same-origin requests do not need CORS changes.
-
-### Clerk webhooks in production
-
-Point the Clerk webhook to `https://your-domain/api/webhooks/clerk` and set `CLERK_WEBHOOK_SIGNING_SECRET`.
-
-### DNS (MongoDB Atlas)
-
-`db.js` sets DNS servers to Google Public DNS (`8.8.8.8`, `8.8.4.4`) to avoid SRV lookup issues on some networks.
+- **Keep-Alive Cron:** In production (`NODE_ENV=production`), `startCronJobs()` pings `/health` every 14 minutes to prevent host sleep.
+- **Clerk Webhooks:** Set `CLERK_WEBHOOK_SIGNING_SECRET` and configure target URL to `https://your-domain.com/api/webhooks/clerk`.
+- **LiveKit Cloud:** WebRTC media packets require UDP ports. Use LiveKit Cloud (or self-hosted LiveKit server on dedicated ports) for audio calls in production.
 
 ---
 
 ## Roadmap
 
-Planned but **not yet implemented**:
-
-- **1:1 voice calls** via [LiveKit](https://livekit.io/) (WebRTC media + Socket.io signaling for ring/accept/reject)
-- **Hardened Socket.io auth** with Clerk JWT verification on connection
-
-See `.cursor/plans/livekit_audio_calls_a92d556c.plan.md` for the detailed implementation plan.
+- [x] **1:1 Real-time Text Messaging**
+- [x] **Rich Media Uploads & Voice Notes**
+- [x] **Static & Live Location Sharing**
+- [x] **1:1 WebRTC Audio Calling (LiveKit)**
+- [x] **Cyber Luxe UI & RGB Engine**
+- [ ] **1:1 WebRTC Video Calling** (UI extension on top of LiveKit room flow)
+- [ ] **Group Chats & Group Voice Channels**
 
 ---
 
@@ -698,28 +586,28 @@ See `.cursor/plans/livekit_audio_calls_a92d556c.plan.md` for the detailed implem
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `dev` | `node --watch src/server.js` | Development server with auto-reload |
-| `build` | Copy `src/` → `dist/` | Production bundle |
-| `start` | `node dist/server.js` | Run production build |
-| `seed` | `node src/seed/userSeed.js` | Seed 20 demo users |
+| `dev` | `node --watch src/server.js` | Dev server with watch mode |
+| `build` | `rm -rf dist && cp -R src dist` | Production backend build |
+| `start` | `node dist/server.js` | Run production server |
+| `seed` | `node src/seed/userSeed.js` | Seed test user database |
 
 ### Frontend
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `dev` | `vite` | Development server |
-| `build` | `vite build` | Production static build |
+| `dev` | `vite` | Start Vite dev server |
+| `build` | `vite build` | Build static production assets |
 | `preview` | `vite preview` | Preview production build |
-| `lint` | `eslint .` | Lint source files |
+| `lint` | `eslint .` | Lint codebase |
 
 ---
 
 ## License
 
-Backend package declares **ISC** license. See individual `package.json` files for details.
+ISC License. See individual package files for details.
 
 ---
 
 ## Summary
 
-YNA Chat is a feature-rich real-time messenger built with modern React and Node.js tooling. Clerk handles authentication; MongoDB stores users and messages; Socket.io delivers instant updates; ImageKit hosts media; and a flexible location subsystem supports both one-time pins and live tracking. Run frontend and backend separately for development, or deploy the included Docker image for a single-host production setup.
+YNA Chat is a complete, feature-rich real-time messaging and WebRTC voice calling platform built with React 19, Node.js, Express 5, Socket.io, LiveKit, MongoDB, and Clerk. It features rich media sharing, live location tracking, an customizable RGB lighting engine, and production-ready Docker deployment options.
