@@ -1,3 +1,8 @@
+/**
+ * Auth hero column for the split-layout sign-in composition.
+ * Used by the unused split-layout auth composition.
+ */
+
 import { APP_NAME } from "../AppLogo";
 import { AuthHeroPattern } from "./AuthHeroPattern";
 
@@ -21,13 +26,13 @@ export function AuthHeroPanel() {
 
       <div className="relative z-1 flex flex-1 flex-col px-6 pb-6 pt-8 md:px-8 md:pb-8 md:pt-10">
         <div className="text-center md:text-left">
-          <p className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-muted">
+          <p className="mb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--cl-glow-violet)]">
             Secure gateway
           </p>
           <h2 className="brand-title text-balance text-[1.15rem] font-semibold uppercase leading-snug tracking-[0.06em] sm:text-[1.25rem]">
             Open {APP_NAME}
           </h2>
-          <p className="mx-auto mt-2.5 max-w-[22rem] text-pretty text-[11px] font-medium leading-relaxed tracking-wide text-muted md:mx-0 md:max-w-none">
+          <p className="mx-auto mt-2.5 max-w-[22rem] text-pretty text-[11px] font-medium leading-relaxed tracking-wide text-[var(--cl-on-surface-variant)] md:mx-0 md:max-w-none">
             Chats, photos, and reactions stay in sync—sign in on the right to continue.
           </p>
         </div>
@@ -44,7 +49,7 @@ export function AuthHeroPanel() {
           />
         </div>
 
-        <p className="text-center text-[10px] font-medium uppercase tracking-[0.18em] text-muted md:text-left">
+        <p className="text-center text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--cl-outline)] md:text-left">
           End-to-end session · Encrypted in transit
         </p>
       </div>

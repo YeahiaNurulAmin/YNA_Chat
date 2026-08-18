@@ -45,9 +45,9 @@ export const RGB_SPEEDS = [
 
 export const RGB_INTENSITIES = [
   { id: "off", label: "Off", blur: "0px", opacity: "0" },
-  { id: "low", label: "Low", blur: "16px", opacity: "0.3" },
-  { id: "medium", label: "Medium", blur: "24px", opacity: "0.55" },
-  { id: "high", label: "High", blur: "36px", opacity: "0.85" }
+  { id: "low", label: "Low", blur: "12px", opacity: "0.2" },
+  { id: "medium", label: "Medium", blur: "18px", opacity: "0.32" },
+  { id: "high", label: "High", blur: "28px", opacity: "0.5" }
 ];
 
 export function getRgbPresetById(id) {

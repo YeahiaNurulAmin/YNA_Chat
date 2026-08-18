@@ -41,7 +41,7 @@ function ChatPage() {
     <div className="app-shell">
       <div className="app-shell-backdrop" aria-hidden />
       <div
-        className="cyber-rgb-frame rgb-border-glow shadow-2xl"
+        className="cyber-rgb-frame rgb-border-glow"
         style={rgbStyle}
       >
         {showGlow && <div className="rgb-backdrop-glow" />}

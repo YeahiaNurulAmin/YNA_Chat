@@ -58,22 +58,33 @@ export function AudioCallModal() {
 
   return (
     <Modal state={modal}>
-      <Modal.Backdrop variant="blur">
+      <Modal.Backdrop variant="opaque">
         <Modal.Container size="sm">
-          <Modal.Dialog className="items-center text-center">
+          <Modal.Dialog className="glass-modal cyber-call-dialog">
             <Modal.Header className="flex w-full flex-col items-center gap-3 pb-2">
               <div className="flex w-full justify-end">
                 <Modal.CloseTrigger />
               </div>
               {peer ? (
-                <Avatar className="size-20">
-                  <Avatar.Image alt={peer.name} src={peer.avatarUrl} />
-                  <Avatar.Fallback className="text-xl font-semibold">{peer.initials}</Avatar.Fallback>
-                </Avatar>
+                <div className="relative">
+                  {status === "outgoing" || status === "incoming" || status === "connecting" ? (
+                    <span className="cyber-call-pulse" aria-hidden />
+                  ) : null}
+                  <div className="avatar-neon-ring rounded-full">
+                    <Avatar className="size-20">
+                      <Avatar.Image alt={peer.name} src={peer.avatarUrl} />
+                      <Avatar.Fallback className="text-xl font-semibold">{peer.initials}</Avatar.Fallback>
+                    </Avatar>
+                  </div>
+                </div>
               ) : null}
               <div>
-                <p className="text-lg font-semibold">{peer?.name ?? "Voice call"}</p>
-                <p className="text-sm text-muted">{title}</p>
+                <p className="font-mono text-lg font-medium tracking-wide text-[var(--cl-on-surface)]">
+                  {peer?.name ?? "Voice call"}
+                </p>
+                <p className="mt-1 font-mono text-xs tracking-[0.14em] uppercase text-[var(--cl-glow-cyan)]">
+                  {title}
+                </p>
               </div>
             </Modal.Header>
 

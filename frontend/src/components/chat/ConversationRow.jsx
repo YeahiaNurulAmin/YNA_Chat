@@ -23,7 +23,7 @@ export function ConversationRow({
       className={`conv-row ${selected ? "conv-row--selected" : ""}`}
     >
       <AvatarWithOnlineIndicator isOnline={user.isOnline ?? true}>
-        <Avatar className="size-12 shrink-0">
+        <Avatar className="size-11 shrink-0">
           <Avatar.Image alt={user.name} src={user.avatarUrl} />
           <Avatar.Fallback className="text-sm font-medium">{user.initials}</Avatar.Fallback>
         </Avatar>

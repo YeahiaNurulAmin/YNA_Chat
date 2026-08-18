@@ -1,5 +1,5 @@
 /**
- * Right sidebar panel showing peer metadata and shared media (Cyber-Luxe Glass).
+ * Right sidebar panel showing peer metadata and shared media (Cyber Neon).
  * Used on ChatPage when a conversation is active on large screens.
  */
 

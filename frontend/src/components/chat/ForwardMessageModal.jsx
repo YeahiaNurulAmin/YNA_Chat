@@ -29,23 +29,25 @@ export function ForwardMessageModal({ isOpen, onOpenChange, message, onForwarded
     <Modal state={overlay}>
       <Modal.Backdrop>
         <Modal.Container size="sm">
-          <Modal.Dialog>
+          <Modal.Dialog className="glass-modal text-[var(--cl-on-surface)]">
             <Modal.CloseTrigger />
             <Modal.Header>
-              <Modal.Heading>Forward message</Modal.Heading>
+              <Modal.Heading className="font-mono text-sm font-medium tracking-[0.12em] uppercase text-[var(--cl-glow-cyan)]">
+                Forward message
+              </Modal.Heading>
             </Modal.Header>
             <Modal.Body>
-              <p className="mb-3 text-sm text-muted">Choose who to forward this message to.</p>
+              <p className="mb-3 text-sm text-[var(--cl-on-surface-variant)]">Choose who to forward this message to.</p>
               <div className="max-h-64 space-y-1 overflow-y-auto">
                 {users.length === 0 ? (
-                  <p className="py-4 text-center text-sm text-muted">No users available.</p>
+                  <p className="py-4 text-center text-sm text-[var(--cl-on-surface-variant)]">No users available.</p>
                 ) : (
                   users.map((user) => (
                     <button
                       key={user._id}
                       type="button"
                       disabled={isForwarding}
-                      className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-surface disabled:opacity-60"
+                      className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-[rgba(34,211,238,0.06)] disabled:opacity-60"
                       onClick={() => void handleForward(user._id)}
                     >
                       <Avatar className="size-10 shrink-0">

@@ -90,18 +90,20 @@ export function EmergencyLocationModal({
     <Modal.Root state={modal}>
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="md" scroll="inside" placement="center">
-          <Modal.Dialog className="max-h-[90dvh] border border-border bg-surface text-foreground shadow-2xl">
-            <Modal.Header className="flex items-center justify-between gap-3 border-b border-border pb-3">
-              <Modal.Heading className="text-lg font-semibold">Emergency live location</Modal.Heading>
+          <Modal.Dialog className="glass-modal cyber-emergency-dialog max-h-[90dvh] text-[var(--cl-on-surface)]">
+            <Modal.Header className="cyber-modal-header flex items-center justify-between gap-3 pb-3">
+              <Modal.Heading className="font-mono text-sm font-medium tracking-[0.12em] uppercase text-[var(--cl-status-alert)]">
+                Emergency live location
+              </Modal.Heading>
               <Modal.CloseTrigger />
             </Modal.Header>
 
             <Modal.Body className="space-y-5 pt-4">
-              <div className="flex gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-600" strokeWidth={2} />
-                <div className="space-y-1 text-foreground/90">
+              <div className="flex gap-3 rounded-lg border border-amber-500/35 bg-amber-500/10 p-3 text-sm">
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-amber-400" strokeWidth={2} />
+                <div className="space-y-1 text-[var(--cl-on-surface)]">
                   <p className="font-medium">For emergency use only</p>
-                  <p className="text-muted">
+                  <p className="text-[var(--cl-on-surface-variant)]">
                     Your browser will ask for location permission. Sharing continues best-effort in the
                     background — keep the app open for reliability.
                   </p>
@@ -109,9 +111,9 @@ export function EmergencyLocationModal({
               </div>
 
               {isActive ? (
-                <div className="space-y-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-                  <p className="text-sm font-medium text-red-700">Live location is active</p>
-                  <p className="text-sm text-muted">
+                <div className="space-y-3 rounded-lg border border-red-500/40 bg-red-500/10 p-4">
+                  <p className="text-sm font-medium text-red-400">Live location is active</p>
+                  <p className="text-sm text-[var(--cl-on-surface-variant)]">
                     Elapsed: {elapsedLabel} · {sendCount} ping{sendCount === 1 ? "" : "s"} sent
                   </p>
                   {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -151,7 +153,7 @@ export function EmergencyLocationModal({
                           setUseCustom(true);
                           setCustomValue(event.target.value);
                         }}
-                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                        className="flex-1 rounded-md border border-[var(--cl-border-muted)] bg-[var(--cl-surface-container)] px-3 py-2 text-sm text-[var(--cl-on-surface)]"
                         aria-label="Custom interval value"
                       />
                       <select
@@ -160,7 +162,7 @@ export function EmergencyLocationModal({
                           setUseCustom(true);
                           setCustomUnit(event.target.value);
                         }}
-                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm sm:w-36"
+                        className="rounded-md border border-[var(--cl-border-muted)] bg-[var(--cl-surface-container)] px-3 py-2 text-sm text-[var(--cl-on-surface)] sm:w-36"
                         aria-label="Custom interval unit"
                       >
                         <option value="seconds">Seconds</option>

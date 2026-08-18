@@ -1,3 +1,8 @@
+/**
+ * Auth action column with Clerk continue button.
+ * Used by the unused split-layout auth composition.
+ */
+
 import { useClerk } from "@clerk/react";
 import { Button } from "@heroui/react";
 import { ArrowRightIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
@@ -7,17 +12,15 @@ import { AuthCardShell } from "./AuthCardShell";
 const AFTER_AUTH = "/";
 
 const logoTileClassName = [
-  "relative rounded-2xl p-2",
-  "bg-surface/60 ring-1 ring-white/10 backdrop-blur-sm",
-  "shadow-[0_0_24px_-4px] shadow-accent/30",
+  "relative rounded-lg p-2",
+  "bg-[#0c0c18] ring-1 ring-cyan-400/20",
+  "shadow-[0_0_18px_-6px] shadow-cyan-400/30",
 ].join(" ");
 
 const continueButtonClassName = [
-  "group relative h-13 overflow-hidden rounded-2xl text-[15px] font-semibold",
-  "shadow-xl shadow-accent/45 dark:shadow-accent/35",
-  "after:pointer-events-none after:absolute after:inset-0 after:rounded-2xl",
-  "after:shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]",
-  "dark:after:shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
+  "group relative h-13 overflow-hidden rounded-md text-[15px] font-semibold",
+  "bg-linear-to-r from-cyan-400 to-violet-500 text-[#04040a]",
+  "shadow-[0_0_18px_-4px_rgba(34,211,238,0.45)]",
 ].join(" ");
 
 export function AuthActionPanel() {
@@ -30,7 +33,7 @@ export function AuthActionPanel() {
           <div className="relative mb-5">
             <div
               aria-hidden
-              className="absolute -inset-3.5 rounded-[20px] bg-linear-to-br from-accent/22 via-accent/8 to-transparent opacity-90 blur-xl dark:from-accent/28 dark:via-accent/10"
+              className="absolute -inset-3.5 rounded-[16px] bg-linear-to-br from-cyan-400/20 via-violet-500/8 to-transparent opacity-90 blur-xl"
             />
             <div className={logoTileClassName}>
               <AppLogo size={52} className="rounded-xl" alt="" />
@@ -65,7 +68,7 @@ export function AuthActionPanel() {
           </Button>
         }
 
-        <div className="mt-8 flex items-center justify-center gap-2 border-t border-white/6 pt-6 text-[11px] text-muted">
+        <div className="mt-8 flex items-center justify-center gap-2 border-t border-white/6 pt-6 text-[11px] text-[var(--cl-on-surface-variant)]">
           <ShieldCheckIcon
             className="size-3.5 shrink-0 text-success"
             strokeWidth={2}

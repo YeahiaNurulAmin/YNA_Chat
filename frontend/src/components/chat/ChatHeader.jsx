@@ -101,7 +101,7 @@ export function ChatHeader() {
 
         <button
           type="button"
-          className="cyber-header-icon hidden sm:flex"
+          className="cyber-header-icon hidden sm:flex text-[var(--cl-glow-violet)] border-[rgba(139,92,246,0.4)]"
           disabled
           aria-label="Video call (coming soon)"
           title="Video calls coming soon"

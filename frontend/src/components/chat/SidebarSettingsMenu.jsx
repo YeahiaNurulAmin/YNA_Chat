@@ -48,34 +48,32 @@ export function SidebarSettingsMenu() {
 
       {isOpen ? (
         <div className="cyber-settings-menu" role="menu">
-          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-            <span className="label-tech text-[10px]">Appearance</span>
-            <div className="flex items-center gap-0.5">
-              <RgbCustomizer />
-              <ThemePresetPicker />
-              <ThemeToggle />
-            </div>
+          <p className="cyber-settings-heading">Appearance</p>
+          <div className="cyber-settings-tools">
+            <RgbCustomizer />
+            <ThemePresetPicker />
+            <ThemeToggle />
           </div>
-          <div className="my-1 h-px bg-white/8" />
+          <div className="cyber-settings-divider" />
           <button
             type="button"
             role="menuitem"
-            className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-white/5"
+            className="cyber-settings-row"
             onClick={() => setNotificationAlertsEnabled(!isNotificationSoundEnabled)}
           >
             <span>Notification sounds</span>
-            <span className="label-tech text-[10px]">
+            <span className={`cyber-settings-state ${isNotificationSoundEnabled ? "cyber-settings-state--on" : ""}`}>
               {isNotificationSoundEnabled ? "ON" : "OFF"}
             </span>
           </button>
           <button
             type="button"
             role="menuitem"
-            className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm hover:bg-white/5"
+            className="cyber-settings-row"
             onClick={() => setKeyboardSoundEnabled(!isKeyboardSoundEnabled)}
           >
             <span>Keyboard sounds</span>
-            <span className="label-tech text-[10px]">
+            <span className={`cyber-settings-state ${isKeyboardSoundEnabled ? "cyber-settings-state--on" : ""}`}>
               {isKeyboardSoundEnabled ? "ON" : "OFF"}
             </span>
           </button>

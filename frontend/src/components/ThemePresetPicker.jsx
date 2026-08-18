@@ -1,3 +1,8 @@
+/**
+ * HeroUI accent-theme preset picker.
+ * Used in SidebarSettingsMenu, ChatHeaderMenu, AuthHeader, and AuthPage.
+ */
+
 import { Button, Modal, useOverlayState } from "@heroui/react";
 import { Check, Palette } from "lucide-react";
 import { applyThemePresetToDocument, useTheme } from "../context/theme";
@@ -16,23 +21,23 @@ export function ThemePresetPicker() {
   return (
     <Modal.Root state={modal}>
       <Modal.Trigger>
-        <Button variant="ghost" size="sm" isIconOnly className="text-foreground">
-          <Palette className="size-5" />
+        <Button variant="ghost" size="sm" isIconOnly className="cyber-header-icon text-[var(--cl-glow-violet)]">
+          <Palette className="size-4" />
         </Button>
       </Modal.Trigger>
 
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="md" scroll="inside" placement="center">
-          <Modal.Dialog className="glass-modal max-h-[85dvh] text-foreground shadow-2xl">
-            <Modal.Header className="rgb-accent-line flex flex-row items-center justify-between gap-3 border-b border-white/8 pb-3">
-              <Modal.Heading className="text-lg font-semibold tracking-tight text-foreground">
+          <Modal.Dialog className="glass-modal max-h-[85dvh] text-[var(--cl-on-surface)]">
+            <Modal.Header className="rgb-accent-line cyber-modal-header flex flex-row items-center justify-between gap-3 pb-3">
+              <Modal.Heading className="font-mono text-sm font-medium tracking-[0.14em] uppercase text-[var(--cl-glow-cyan)]">
                 Accent theme
               </Modal.Heading>
               <Modal.CloseTrigger />
             </Modal.Header>
 
             <Modal.Body className="isolate pt-4">
-              <p className="mb-4 text-sm text-muted">
+              <p className="mb-4 text-sm text-[var(--cl-on-surface-variant)]">
                 HeroUI components use the accent color for primary actions and focus.
               </p>
               <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
@@ -44,9 +49,9 @@ export function ThemePresetPicker() {
                       type="button"
                       onClick={() => handleSelect(p.id)}
                       className={[
-                        "relative flex flex-col items-center gap-2 rounded-xl p-2 text-center transition-colors",
+                        "relative flex flex-col items-center gap-2 rounded-lg p-2 text-center transition-colors",
                         selected
-                          ? "bg-accent/15 ring-2 ring-accent ring-offset-2 ring-offset-[#1a1a1e]"
+                          ? "bg-[rgba(34,211,238,0.1)] ring-1 ring-[var(--cl-glow-cyan)]"
                           : "hover:bg-white/5",
                       ].join(" ")}
                       aria-pressed={selected}
@@ -58,15 +63,15 @@ export function ThemePresetPicker() {
                         />
 
                         {selected ? (
-                          <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md">
+                          <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-[var(--cl-glow-cyan)] text-[#04040a] shadow-md">
                             <Check className="size-3" strokeWidth={3} />
                           </span>
                         ) : null}
                       </span>
                       <span
                         className={[
-                          "text-[11px] font-medium leading-tight",
-                          selected ? "text-foreground" : "text-muted",
+                          "font-mono text-[11px] font-medium leading-tight",
+                          selected ? "text-[var(--cl-glow-cyan)]" : "text-[var(--cl-outline)]",
                         ].join(" ")}
                       >
                         {p.label}

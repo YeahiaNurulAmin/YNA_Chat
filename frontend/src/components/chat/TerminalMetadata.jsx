@@ -1,5 +1,5 @@
 /**
- * Technical status labels shown above the message composer (Cyber-Luxe Glass).
+ * Technical status labels shown above the message composer (Cyber Neon).
  * Used on ChatPage main panel footer.
  */
 
