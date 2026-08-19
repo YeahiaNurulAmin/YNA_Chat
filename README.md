@@ -1,6 +1,6 @@
 # YNA Chat
 
-A full-stack, real-time 1:1 messaging and WebRTC audio calling application with rich media support, location sharing, live location tracking, customizable RGB lighting effects, and a polished modern UI. Built as a monolith-friendly architecture: a React SPA talks to an Express API and Socket.io server, with MongoDB for persistence, Clerk for authentication, ImageKit for media CDN, and LiveKit for WebRTC audio calls.
+A full-stack, real-time 1:1 messaging and WebRTC audio/video calling application with rich media support, location sharing, live location tracking, customizable RGB lighting effects, and a polished modern UI. Built as a monolith-friendly architecture: a React SPA talks to an Express API and Socket.io server, with MongoDB for persistence, Clerk for authentication, ImageKit for media CDN, and LiveKit for WebRTC audio & video calls.
 
 ---
 
@@ -18,7 +18,7 @@ A full-stack, real-time 1:1 messaging and WebRTC audio calling application with 
 - [Authentication](#authentication)
 - [API Reference](#api-reference)
 - [Real-Time Events (Socket.io)](#real-time-events-socketio)
-- [Audio Calling (LiveKit & WebRTC)](#audio-calling-livekit--webrtc)
+- [Audio & Video Calling (LiveKit & WebRTC)](#audio--video-calling-livekit--webrtc)
 - [Location System](#location-system)
 - [Media Uploads](#media-uploads)
 - [Frontend State & UX](#frontend-state--ux)
@@ -34,11 +34,11 @@ A full-stack, real-time 1:1 messaging and WebRTC audio calling application with 
 
 ## Overview
 
-**YNA Chat** is a modern chat and WebRTC audio calling application designed for direct (1:1) communication between registered users. Each user signs in through [Clerk](https://clerk.com); their profile is automatically synced into MongoDB so the app can store messages, track read receipts, power the sidebar, and manage active voice calls.
+**YNA Chat** is a modern chat and WebRTC audio/video calling application designed for direct (1:1) communication between registered users. Each user signs in through [Clerk](https://clerk.com); their profile is automatically synced into MongoDB so the app can store messages, track read receipts, power the sidebar, and manage active voice/video calls.
 
 The app supports:
 
-- **1:1 Voice Calls** over WebRTC via LiveKit with instant Socket.io signaling and Web Audio ring/call sounds
+- **1:1 Voice & Video Calls** over WebRTC via LiveKit with instant Socket.io signaling and Web Audio ring/call sounds
 - **Editable profiles** with display name and photo updates that sync through Clerk and apply instantly
 - **Text messages** with reply-to quoting and deletion options
 - **Rich media** attachments: images, videos, audio files, documents, and interactive voice notes
@@ -53,15 +53,18 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 
 ## Features
 
-### WebRTC Audio Calls
+### WebRTC Audio & Video Calls
 
 | Feature | Description |
 |---------|-------------|
 | **1:1 Voice Calls** | High-fidelity WebRTC audio calling powered by LiveKit SFU infrastructure |
-| **Real-time Signaling** | Socket.io signaling for `call:incoming`, `call:accepted`, `call:rejected`, and `call:ended` |
+| **1:1 Video Calls** | Full WebRTC video calling with remote full-screen stage, local picture-in-picture (PiP) preview, and camera on/off states |
+| **Camera controls** | Toggle camera on/off mid-call and switch between front/rear facing modes |
+| **Real-time Signaling** | Socket.io signaling for `call:incoming`, `call:accepted`, `call:rejected`, and `call:ended`, carrying `callType` (audio/video) |
 | **In-App Call Overlay** | Full-screen glassmorphic call overlay with neon avatar ring, pulsing glow effects, call duration timer, and status pills |
+| **Minimized call bar** | Collapse an active call into a compact floating bar with remote video preview; one click restores the full overlay |
 | **Synthesized Audio Effects** | Web Audio API generated ringback tones, incoming ringtones, and connection sounds |
-| **Call Controls** | Microphone mute toggle, speaker/volume toggle, and defensive call termination |
+| **Call Controls** | Microphone mute toggle, speaker/volume toggle, camera toggle, camera switch, and defensive call termination |
 
 ### Messaging
 
@@ -127,7 +130,7 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 | [Zustand 5](https://zustand.docs.pmnd.rs/) | Global state management (`useAuthStore`, `useChatStore`, `useCallStore`) |
 | [Clerk React](https://clerk.com/docs/references/react/overview) | Authentication and session token handling |
 | [Socket.io Client](https://socket.io/) | Real-time messages, presence, and call signaling |
-| [LiveKit Client](https://docs.livekit.io/) | WebRTC room connection and audio track publishing/subscribing |
+| [LiveKit Client](https://docs.livekit.io/) | WebRTC room connection, audio/video track publishing/subscribing, and camera switching |
 | [Axios](https://axios-http.com/) | HTTP client with Clerk JWT interceptor |
 | [HeroUI](https://www.heroui.com/) + [Tailwind CSS 4](https://tailwindcss.com/) | Design system and styling |
 | [Leaflet](https://leafletjs.com/) | Map picker and location message display |
@@ -195,7 +198,7 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 ### Message & Signaling Flow
 
 1. **Messages:** Sent via REST endpoints (`/api/messages/send/:receiverId`). Messages are saved in MongoDB and emitted directly over Socket.io to the receiver's socket ID.
-2. **Audio Call Signaling:** Initiated via `/api/calls/invite`. The backend mints a LiveKit room token, emits `call:incoming` via Socket.io, and manages call lifecycle events (`accept`, `reject`, `end`, `cancel`).
+2. **Call Signaling:** Initiated via `/api/calls/invite`. The backend mints a LiveKit room token, emits `call:incoming` (with `callType`) via Socket.io, and manages call lifecycle events (`accept`, `reject`, `end`, `cancel`).
 3. **WebRTC Media:** Once connected, raw WebRTC audio flows directly between clients and the LiveKit SFU server.
 
 ---
@@ -217,7 +220,7 @@ YNA_Chat/
 │       │   ├── authControl.js     # GET /auth/check
 │       │   ├── messageControl.js  # Users, conversations, messages, send, delete, forward
 │       │   ├── locationControl.js # Static + live location endpoints
-│       │   └── callControl.js     # LiveKit token minting, call invite/accept/reject/end
+│       │   └── callControl.js     # LiveKit token minting, call invite/accept/reject/end (audio & video callType)
 │       ├── Middlewares/
 │       │   ├── authMiddelware.js  # Clerk JWT → MongoDB user resolution
 │       │   └── updateMiddelware.js# Multer upload config (25MB limit)
@@ -243,7 +246,7 @@ YNA_Chat/
 │       │       └── parseLocation.js
 │       ├── services/location/
 │       │   ├── locationService.js # Static & live location business logic
-│       │   └── providers/         # Map tiles (OSM) and geocoding providers
+│       │   └── providers/         # Map tiles (OSM), geocoding providers, Google Maps example config
 │       ├── webhooks/
 │       │   └── clerkWebhookMiddleware.js
 │       ├── migrations/
@@ -266,7 +269,7 @@ YNA_Chat/
         ├── store/
         │   ├── useAuthStore.js    # authUser, socket instance, onlineUsers
         │   ├── useChatStore.js    # messages, conversations, active chat, send/receive
-        │   └── useCallStore.js    # activeCall, call status, duration, audio controls
+        │   └── useCallStore.js    # activeCall, call type, status, duration, audio/video controls
         ├── components/
         │   ├── AppLogo.jsx
         │   ├── PageLoader.jsx
@@ -274,15 +277,16 @@ YNA_Chat/
         │   ├── ThemePresetPicker.jsx
         │   ├── ThemeToggle.jsx
         │   ├── auth/              # Auth layout & sign-in panels
-│         └── chat/              # AudioCallModal, ProfileEditModal, SettingsPage, ChatSidebar, ChatComposer, MessageBubble, etc.
+        │   └── chat/              # AudioCallModal, VideoCallModal, VideoFeeds, MinimizedCallBar, ChatSidebar, ChatComposer, MessageBubble, MessageList, ChannelIntel, TerminalMetadata, AvatarWithOnlineIndicator, LocationPickerModal, EmergencyLocationModal, LiveLocationGroup, ForwardMessageModal, MessageActionsMenu, ProfileEditModal, SettingsPage, etc.
         ├── context/
+        │   ├── theme.js
         │   ├── ThemeContext.jsx
         │   ├── RgbContext.jsx     # RGB state (preset, speed, opacity, glow)
         │   └── WallpaperContext.jsx
-        ├── hooks/                 # useLivekitCall, useCallSounds, useVoiceRecorder, etc.
-        ├── lib/                   # axios, callApi, locationApi, media, notifications
+        ├── hooks/                 # useLivekitCall, useCallSounds, useVoiceRecorder, useEmergencyLocationSession, useSelectedConversation, useMessageSound, useUnreadDocumentTitle, useMediaQuery, useScrollToBottom, useKeyboardSound, etc.
+        ├── lib/                   # axios, callApi, locationApi, media, messages, messagePreview, imagekit, browserNotifications, utils
         ├── styles/                # cyber-luxe-glass.css, heroui-theme-presets.css
-        └── data/                  # rgbPresets.js, theme presets, wallpapers
+        └── data/                  # rgbPresets.js, herouiThemePresets.js, wallpapers
 ```
 
 ---
@@ -294,7 +298,7 @@ YNA_Chat/
 - **MongoDB** — local instance or [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
 - **Clerk** account — [dashboard.clerk.com](https://dashboard.clerk.com)
 - **ImageKit** account — required for media uploads ([imagekit.io](https://imagekit.io))
-- **LiveKit Cloud** account — required for WebRTC audio calls ([cloud.livekit.io](https://cloud.livekit.io))
+- **LiveKit Cloud** account — required for WebRTC audio & video calls ([cloud.livekit.io](https://cloud.livekit.io))
 - (Optional) **Nominatim** for reverse-geocoded location labels
 
 ---
@@ -318,7 +322,7 @@ CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 # ImageKit Media Storage
 IMAGEKIT_PRIVATE_KEY=private_...
 
-# LiveKit WebRTC Audio Calls (Optional for text/media; required for audio calls)
+# LiveKit WebRTC Audio & Video Calls (Optional for text/media; required for calls)
 LIVEKIT_URL=wss://your-project.livekit.cloud
 LIVEKIT_API_KEY=API...
 LIVEKIT_API_SECRET=Secret...
@@ -464,11 +468,11 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 | `POST` | `/location/live/:sessionId/ping` | Send live location ping |
 | `POST` | `/location/live/:sessionId/stop` | End live location session |
 
-### Audio Calls (LiveKit)
+### Audio & Video Calls (LiveKit)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/calls/invite` | Initiate voice call, generate LiveKit room token & emit `call:incoming` |
+| `POST` | `/calls/invite` | Initiate voice or video call (`callType: "audio" \| "video"`), generate LiveKit room token & emit `call:incoming` |
 | `POST` | `/calls/accept` | Accept incoming call & generate callee LiveKit token |
 | `POST` | `/calls/reject` | Reject call & inform caller |
 | `POST` | `/calls/end` | End active or ringing call & clean up room |
@@ -484,8 +488,8 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 | `getOnlineUsers` | `string[]` (User IDs) | Broadcast online user list |
 | `newMessage` | `Message` object | Incoming chat message |
 | `messageDeleted` | `{ messageId }` | Notification of deleted message |
-| `call:incoming` | `{ callId, callerId, callerName, callerAvatar }` | Trigger incoming call modal |
-| `call:accepted` | `{ callId, roomName, token }` | Callee accepted; connect caller to LiveKit room |
+| `call:incoming` | `{ callId, roomName, callType, caller: { _id, fullName, profilePic } }` | Trigger incoming call modal (audio or video) |
+| `call:accepted` | `{ callId, roomName }` | Callee accepted; connect caller to LiveKit room |
 | `call:rejected` | `{ callId }` | Callee rejected the call |
 | `call:ended` | `{ callId, roomName, reason }` | Call was ended by peer or timed out |
 
@@ -499,15 +503,16 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 
 ---
 
-## Audio Calling (LiveKit & WebRTC)
+## Audio & Video Calling (LiveKit & WebRTC)
 
-1. **Invitation:** Caller selects user and clicks call button. Frontend sends `POST /api/calls/invite`.
+1. **Invitation:** Caller selects user and clicks the voice or video call button. Frontend sends `POST /api/calls/invite` with `callType: "audio" | "video"`.
 2. **Token Generation:** Express backend creates a unique room via `livekit-server-sdk` and mints a JWT token for the caller.
-3. **Signaling:** Socket.io delivers `call:incoming` event to the target user along with synthesized ringtone.
+3. **Signaling:** Socket.io delivers `call:incoming` (with `callType`) to the target user along with synthesized ringtone.
 4. **Acceptance:** Callee clicks Accept -> `POST /api/calls/accept` returns LiveKit room token for callee. Socket.io emits `call:accepted` to caller.
-5. **Media Stream:** Both clients initialize `livekit-client` Room connections to `VITE_LIVEKIT_URL` and enable local audio tracks.
-6. **Call Controls:** Mute toggles the local audio track, and the speaker toggle adjusts remote audio element volumes during the active call.
-7. **Defensive Cleanup:** When call ends (`POST /api/calls/end` or socket disconnect), `callSignaling` deletes room on LiveKit server and releases media hardware.
+5. **Media Stream:** Both clients initialize `livekit-client` Room connections to `VITE_LIVEKIT_URL` and publish local audio (and camera tracks for video calls), subscribing to the peer's remote tracks.
+6. **Video UI:** The callee/caller views the remote feed on a full-screen stage with a local PiP preview; camera can be toggled off/on or switched between front/rear facing modes mid-call.
+7. **Call Controls:** Mute toggles the local audio track, the speaker toggle adjusts remote audio element volumes, and the call can be minimized to a floating bar with remote video preview.
+8. **Defensive Cleanup:** When call ends (`POST /api/calls/end` or socket disconnect), `callSignaling` deletes room on LiveKit server and releases media hardware.
 
 ---
 
@@ -531,7 +536,7 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 
 - **`useAuthStore`:** Manages Clerk authentication sync, MongoDB profile, socket initialization, and online presence map.
 - **`useChatStore`:** Manages active chat selection, conversation list, message timeline, replies, unread counts, and sound toggles.
-- **`useCallStore`:** Manages WebRTC audio call state (`idle`, `outgoing`, `incoming`, `active`), call timer, mute/speaker status, and LiveKit room connection.
+- **`useCallStore`:** Manages WebRTC audio/video call state (`idle`, `outgoing`, `incoming`, `connecting`, `active`), `callType`, call timer, mute/speaker/camera toggles, camera facing mode, minimize/restore, and the LiveKit room connection (`useLivekitCall` manages track attach/detach and camera switching).
 
 ---
 
@@ -573,7 +578,7 @@ The container listens on port `3000` (or `$PORT`), serving API endpoints at `/ap
 
 - **Keep-Alive Cron:** In production (`NODE_ENV=production`), `startCronJobs()` pings `/health` every 14 minutes to prevent host sleep.
 - **Clerk Webhooks:** Set `CLERK_WEBHOOK_SIGNING_SECRET` and configure target URL to `https://your-domain.com/api/webhooks/clerk`.
-- **LiveKit Cloud:** WebRTC media packets require UDP ports. Use LiveKit Cloud (or self-hosted LiveKit server on dedicated ports) for audio calls in production.
+- **LiveKit Cloud:** WebRTC media packets require UDP ports. Use LiveKit Cloud (or self-hosted LiveKit server on dedicated ports) for audio/video calls in production.
 
 ---
 
@@ -584,7 +589,7 @@ The container listens on port `3000` (or `$PORT`), serving API endpoints at `/ap
 - [x] **Static & Live Location Sharing**
 - [x] **1:1 WebRTC Audio Calling (LiveKit)**
 - [x] **Cyber Luxe UI & RGB Engine**
-- [ ] **1:1 WebRTC Video Calling** (UI extension on top of LiveKit room flow)
+- [x] **1:1 WebRTC Video Calling** (full camera pipeline, PiP preview, camera switching)
 - [ ] **Group Chats & Group Voice Channels**
 
 ---
@@ -619,4 +624,4 @@ ISC License. See individual package files for details.
 
 ## Summary
 
-YNA Chat is a complete, feature-rich real-time messaging and WebRTC voice calling platform built with React 19, Node.js, Express 5, Socket.io, LiveKit, MongoDB, and Clerk. It features rich media sharing, editable profiles, live location tracking, an customizable RGB lighting engine, and production-ready Docker deployment options.
+YNA Chat is a complete, feature-rich real-time messaging and WebRTC audio/video calling platform built with React 19, Node.js, Express 5, Socket.io, LiveKit, MongoDB, and Clerk. It features rich media sharing, editable profiles, live location tracking, a customizable RGB lighting engine, and production-ready Docker deployment options.
