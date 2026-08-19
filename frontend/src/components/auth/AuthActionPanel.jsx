@@ -13,7 +13,7 @@ const AFTER_AUTH = "/";
 
 const logoTileClassName = [
   "relative rounded-lg p-2",
-  "bg-[#0c0c18] ring-1 ring-cyan-400/20",
+  "bg-[var(--cl-glass)] ring-1 ring-cyan-400/20",
   "shadow-[0_0_18px_-6px] shadow-cyan-400/30",
 ].join(" ");
 

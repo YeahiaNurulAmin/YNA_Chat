@@ -52,7 +52,7 @@ export function ThemePresetPicker() {
                         "relative flex flex-col items-center gap-2 rounded-lg p-2 text-center transition-colors",
                         selected
                           ? "bg-[rgba(34,211,238,0.1)] ring-1 ring-[var(--cl-glow-cyan)]"
-                          : "hover:bg-white/5",
+                          : "hover:bg-[var(--cl-wash-1)]",
                       ].join(" ")}
                       aria-pressed={selected}
                     >

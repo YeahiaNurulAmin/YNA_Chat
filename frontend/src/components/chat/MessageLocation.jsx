@@ -28,7 +28,7 @@ export function MessageLocation({ location, isLiveLocation = false, time, isOwnM
         className="group block"
         aria-label="Open location in maps"
       >
-        <div className="relative overflow-hidden rounded-lg border border-[var(--cl-border-muted)] bg-[#04040a]">
+        <div className="relative overflow-hidden rounded-lg border border-[var(--cl-border-muted)] bg-[var(--cl-bg-mesh)]">
           {mapPreviewFailed ? (
             <div className="cyber-map-fallback sm:h-32">
               <MapPinIcon className="size-10 text-[var(--cl-glow-magenta)]" strokeWidth={1.75} aria-hidden />

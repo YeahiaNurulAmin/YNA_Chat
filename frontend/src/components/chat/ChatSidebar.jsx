@@ -4,10 +4,9 @@ import { useChatStore } from "../../store/useChatStore";
 import { getMessagePreview } from "../../lib/messagePreview";
 import { formatMessageTime } from "../../lib/utils";
 import { APP_NAME, AppLogo } from "../AppLogo";
-import { UserButton } from "@clerk/react";
 import { MessageSquareIcon, SearchIcon, UsersIcon } from "lucide-react";
 import { ConversationRow } from "./ConversationRow";
-import { SidebarSettingsMenu } from "./SidebarSettingsMenu";
+import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
 function mapUserForList(user, onlineUsers, { unreadCounts = {}, conversationMeta = {} } = {}) {
   const id = String(user._id);
@@ -57,7 +56,9 @@ function ChatSidebar() {
   const setSidebarTab = useChatStore((state) => state.setSidebarTab);
 
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
+  const setSettingsOpen = useChatStore((state) => state.setSettingsOpen);
 
+  const authUser = useAuthStore((state) => state.authUser);
   const onlineUsers = useAuthStore((state) => state.onlineUsers);
 
   const { activeConversationId, isLargeScreen } = useSelectedConversation();
@@ -83,6 +84,9 @@ function ChatSidebar() {
 
   const listItems = sidebarTab === "chats" ? filteredConversations : filteredUsers;
 
+  const authAvatarUrl = authUser?.profilePic ?? authUser?.profilePicture;
+  const authInitials = getInitials(authUser?.fullName ?? "");
+
   return (
     <aside
       className={`cyber-glass-panel cyber-sidebar flex-col overflow-hidden ${
@@ -100,13 +104,23 @@ function ChatSidebar() {
             <p className="brand-title truncate">{APP_NAME}</p>
             <p className="label-tech mt-0.5">Protocol 4.2 Active</p>
           </div>
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: "size-8",
-              },
-            }}
-          />
+          <button
+            type="button"
+            aria-label="Open settings"
+            title="Settings"
+            onClick={() => setSettingsOpen(true)}
+            className="relative inline-flex shrink-0 cursor-pointer rounded-full transition-transform focus-visible:outline-none focus-visible:shadow-[var(--cl-focus)] active:scale-95"
+          >
+            <AvatarWithOnlineIndicator isOnline={onlineUsers.includes(authUser?._id)}>
+              {authAvatarUrl ? (
+                <img src={authAvatarUrl} alt="" className="size-8 rounded-full object-cover" />
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full bg-[var(--cl-glass)] font-mono text-xs font-medium text-[var(--cl-glow-cyan)]">
+                  {authInitials}
+                </span>
+              )}
+            </AvatarWithOnlineIndicator>
+          </button>
         </div>
       </div>
 
@@ -169,7 +183,6 @@ function ChatSidebar() {
             System: Secure
           </span>
         </div>
-        <SidebarSettingsMenu />
       </div>
     </aside>
   );

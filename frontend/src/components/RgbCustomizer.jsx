@@ -57,7 +57,7 @@ export function RgbCustomizer() {
                           "relative flex flex-col items-center gap-2 rounded-lg p-2.5 text-center transition-all duration-200 outline-none cursor-pointer",
                           selected
                             ? "bg-[rgba(34,211,238,0.1)] ring-1 ring-[var(--cl-glow-cyan)]"
-                            : "hover:bg-white/5",
+                            : "hover:bg-[var(--cl-wash-1)]",
                         ].join(" ")}
                         aria-pressed={selected}
                       >

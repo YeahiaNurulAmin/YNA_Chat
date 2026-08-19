@@ -198,7 +198,7 @@ export function LocationPickerModal({ isOpen, onOpenChange, onSend, isSending = 
           scroll="inside"
           placement="center"
         >
-          <Modal.Dialog className="flex h-dvh w-full max-h-none max-w-none flex-col rounded-none border-0 bg-[#06060f] text-[var(--cl-on-surface)] shadow-none">
+          <Modal.Dialog className="flex h-dvh w-full max-h-none max-w-none flex-col rounded-none border-0 bg-[var(--cl-bg)] text-[var(--cl-on-surface)] shadow-none">
             <Modal.Header className="cyber-modal-header flex shrink-0 items-center justify-between gap-3 px-4 py-3">
               <Modal.Heading className="font-mono text-sm font-medium tracking-[0.12em] uppercase text-[var(--cl-glow-cyan)]">
                 Send location
@@ -220,7 +220,7 @@ export function LocationPickerModal({ isOpen, onOpenChange, onSend, isSending = 
                 ) : null}
               </div>
 
-              <div className="shrink-0 space-y-3 border-t border-[var(--cl-border)] bg-[#080814] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="shrink-0 space-y-3 border-t border-[var(--cl-border)] bg-[var(--cl-surface-container)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 {selectedCoords ? (
                   <p className="font-mono text-sm font-medium text-[var(--cl-on-surface)]">
                     {formatCoordinates(selectedCoords.latitude, selectedCoords.longitude)}
