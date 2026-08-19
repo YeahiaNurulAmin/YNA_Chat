@@ -39,6 +39,7 @@ A full-stack, real-time 1:1 messaging and WebRTC audio calling application with 
 The app supports:
 
 - **1:1 Voice Calls** over WebRTC via LiveKit with instant Socket.io signaling and Web Audio ring/call sounds
+- **Editable profiles** with display name and photo updates that sync through Clerk and apply instantly
 - **Text messages** with reply-to quoting and deletion options
 - **Rich media** attachments: images, videos, audio files, documents, and interactive voice notes
 - **Static map pins** and continuous live location tracking sessions with distance deduplication
@@ -58,9 +59,9 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 |---------|-------------|
 | **1:1 Voice Calls** | High-fidelity WebRTC audio calling powered by LiveKit SFU infrastructure |
 | **Real-time Signaling** | Socket.io signaling for `call:incoming`, `call:accepted`, `call:rejected`, and `call:ended` |
-| **In-App Call Modal** | Full-screen interactive incoming/outgoing/active call modal with call duration timer |
+| **In-App Call Overlay** | Full-screen glassmorphic call overlay with neon avatar ring, pulsing glow effects, call duration timer, and status pills |
 | **Synthesized Audio Effects** | Web Audio API generated ringback tones, incoming ringtones, and connection sounds |
-| **Call Controls** | Microphones toggle (mute/unmute), speaker/volume control, and defensive call termination |
+| **Call Controls** | Microphone mute toggle, speaker/volume toggle, and defensive call termination |
 
 ### Messaging
 
@@ -93,6 +94,13 @@ In **development**, the frontend (Vite on port `5173`) and backend (Express on p
 | **Browser notifications** | Optional desktop notifications when the tab is hidden |
 | **Document title badge** | Tab title shows total unread count, e.g. `(3) YNA Chat` |
 | **Keyboard sounds** | Optional keystroke sounds while typing (persisted preference) |
+
+### Profile & Settings
+
+| Feature | Description |
+|---------|-------------|
+| **Profile editing** | Update your display name and profile photo from the settings page; changes sync to Clerk and propagate to the UI immediately |
+| **Settings page** | Dedicated settings view with editable profile and personalization options |
 
 ### UI & Personalization
 
@@ -266,7 +274,7 @@ YNA_Chat/
         │   ├── ThemePresetPicker.jsx
         │   ├── ThemeToggle.jsx
         │   ├── auth/              # Auth layout & sign-in panels
-        │   └── chat/              # AudioCallModal, ChatSidebar, ChatComposer, MessageBubble, etc.
+│         └── chat/              # AudioCallModal, ProfileEditModal, SettingsPage, ChatSidebar, ChatComposer, MessageBubble, etc.
         ├── context/
         │   ├── ThemeContext.jsx
         │   ├── RgbContext.jsx     # RGB state (preset, speed, opacity, glow)
@@ -498,7 +506,8 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 3. **Signaling:** Socket.io delivers `call:incoming` event to the target user along with synthesized ringtone.
 4. **Acceptance:** Callee clicks Accept -> `POST /api/calls/accept` returns LiveKit room token for callee. Socket.io emits `call:accepted` to caller.
 5. **Media Stream:** Both clients initialize `livekit-client` Room connections to `VITE_LIVEKIT_URL` and enable local audio tracks.
-6. **Defensive Cleanup:** When call ends (`POST /api/calls/end` or socket disconnect), `callSignaling` deletes room on LiveKit server and releases media hardware.
+6. **Call Controls:** Mute toggles the local audio track, and the speaker toggle adjusts remote audio element volumes during the active call.
+7. **Defensive Cleanup:** When call ends (`POST /api/calls/end` or socket disconnect), `callSignaling` deletes room on LiveKit server and releases media hardware.
 
 ---
 
@@ -522,7 +531,7 @@ Base URL: `http://localhost:3000/api` (dev) or `/api` (prod). All routes (except
 
 - **`useAuthStore`:** Manages Clerk authentication sync, MongoDB profile, socket initialization, and online presence map.
 - **`useChatStore`:** Manages active chat selection, conversation list, message timeline, replies, unread counts, and sound toggles.
-- **`useCallStore`:** Manages WebRTC audio call state (`idle`, `outgoing`, `incoming`, `active`), call timer, mute status, and LiveKit room connection.
+- **`useCallStore`:** Manages WebRTC audio call state (`idle`, `outgoing`, `incoming`, `active`), call timer, mute/speaker status, and LiveKit room connection.
 
 ---
 
@@ -610,4 +619,4 @@ ISC License. See individual package files for details.
 
 ## Summary
 
-YNA Chat is a complete, feature-rich real-time messaging and WebRTC voice calling platform built with React 19, Node.js, Express 5, Socket.io, LiveKit, MongoDB, and Clerk. It features rich media sharing, live location tracking, an customizable RGB lighting engine, and production-ready Docker deployment options.
+YNA Chat is a complete, feature-rich real-time messaging and WebRTC voice calling platform built with React 19, Node.js, Express 5, Socket.io, LiveKit, MongoDB, and Clerk. It features rich media sharing, editable profiles, live location tracking, an customizable RGB lighting engine, and production-ready Docker deployment options.
