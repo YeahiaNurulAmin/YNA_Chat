@@ -1,12 +1,22 @@
 /**
- * Auth action card with Clerk sign-in / sign-up triggers.
+ * Custom Clerk auth card: sign-in / sign-up toggle, email + password,
+ * direct OAuth SSO, and email-verification step. No Clerk UI surfaces.
  */
 
-import { useClerk } from "@clerk/react";
-import { ArrowRightIcon } from "lucide-react";
+import { useClerk, useSignIn, useSignUp } from "@clerk/react";
+import { useState } from "react";
+import {
+  ArrowRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  Loader2Icon,
+  MailIcon,
+} from "lucide-react";
 import { AuthCardShell } from "./AuthCardShell";
 
 const AFTER_AUTH = "/";
+const SSO_CALLBACK_URL = "/sso-callback";
 
 function GoogleIcon() {
   return (
@@ -58,37 +68,166 @@ function XIcon() {
 }
 
 const socialProviders = [
-  { label: "Google", Icon: GoogleIcon },
-  { label: "GitHub", Icon: GitHubIcon },
-  { label: "X", Icon: XIcon },
+  { label: "Google", strategy: "oauth_google", Icon: GoogleIcon },
+  { label: "GitHub", strategy: "oauth_github", Icon: GitHubIcon },
+  { label: "X", strategy: "oauth_twitter", Icon: XIcon },
 ];
+
+function extractError(error) {
+  return (
+    error?.errors?.[0]?.longMessage ??
+    error?.errors?.[0]?.message ??
+    error?.message ??
+    null
+  );
+}
+
+const fieldClassName = "auth-field-input w-full text-sm";
 
 export function AuthActionPanel() {
   const clerk = useClerk();
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
 
-  const openSignIn = () => {
-    clerk.openSignIn({ fallbackRedirectUrl: AFTER_AUTH, forceRedirectUrl: AFTER_AUTH });
+  const [mode, setMode] = useState("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [code, setCode] = useState("");
+  const [verifyStep, setVerifyStep] = useState(null);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSignIn = mode === "signin";
+
+  const switchMode = (next) => {
+    setMode(next);
+    setError(null);
+    setVerifyStep(null);
+    setCode("");
   };
 
-  const openSignUp = () => {
-    clerk.openSignUp({ fallbackRedirectUrl: AFTER_AUTH, forceRedirectUrl: AFTER_AUTH });
+  const handleSso = async (strategy) => {
+    if (!signIn || !signUp) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const target = isSignIn ? signIn : signUp;
+      const result = await target.sso({
+        strategy,
+        redirectUrl: window.location.origin + AFTER_AUTH,
+        redirectCallbackUrl: window.location.origin + SSO_CALLBACK_URL,
+      });
+      if (result.error) setError(extractError(result.error));
+    } catch (err) {
+      setError(extractError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!signIn || !signUp) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      if (isSignIn) {
+        const result = await signIn.create({ identifier: email, password });
+        if (result.error) {
+          setError(extractError(result.error));
+          return;
+        }
+        if (signIn.status === "complete") {
+          await signIn.finalize();
+        } else if (signIn.status === "needs_first_factor") {
+          const factorResult = await signIn.password({ password });
+          if (factorResult.error) {
+            setError(extractError(factorResult.error));
+            return;
+          }
+          if (signIn.status === "complete") {
+            await signIn.finalize();
+          } else {
+            clerk.redirectToSignIn({ redirectUrl: AFTER_AUTH });
+          }
+        } else {
+          clerk.redirectToSignIn({ redirectUrl: AFTER_AUTH });
+        }
+      } else {
+        const result = await signUp.create({ emailAddress: email, password });
+        if (result.error) {
+          setError(extractError(result.error));
+          if (signUp.isTransferable) switchMode("signin");
+          return;
+        }
+        if (signUp.status === "complete") {
+          await signUp.finalize();
+        } else if (signUp.status === "needs_email_address_verification") {
+          const sendResult = await signUp.verifications.sendEmailCode();
+          if (sendResult.error) {
+            setError(extractError(sendResult.error));
+            return;
+          }
+          setVerifyStep("email_code");
+        } else {
+          clerk.redirectToSignUp({ redirectUrl: AFTER_AUTH });
+        }
+      }
+    } catch (err) {
+      setError(extractError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyCode = async (event) => {
+    event.preventDefault();
+    if (!signUp) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const result = await signUp.verifications.verifyEmailCode({ code });
+      if (result.error) {
+        setError(extractError(result.error));
+        return;
+      }
+      if (signUp.status === "complete") {
+        await signUp.finalize();
+      }
+    } catch (err) {
+      setError(extractError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const backToForm = () => {
+    setVerifyStep(null);
+    setCode("");
+    setError(null);
   };
 
   return (
     <AuthCardShell>
-      <h2 className="auth-card-heading">Welcome Back</h2>
-      <p className="auth-card-subheading">Enter your credentials to access the grid</p>
+      <h2 className="auth-card-heading">
+        {isSignIn ? "Welcome Back" : "Create Account"}
+      </h2>
+      <p className="auth-card-subheading">
+        {isSignIn ? "Enter your credentials to access the grid" : "Join the secure YNA network"}
+      </p>
 
       <div className="mt-6 grid grid-cols-3 gap-2.5">
-        {socialProviders.map(({ label, Icon }) => (
+        {socialProviders.map(({ label, strategy, Icon }) => (
           <button
             key={label}
             type="button"
             aria-label={`Continue with ${label}`}
-            onClick={openSignIn}
+            onClick={() => handleSso(strategy)}
+            disabled={isSubmitting}
             className="auth-social-btn"
           >
-            <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+            <Icon className="size-4.5" aria-hidden />
           </button>
         ))}
       </div>
@@ -99,18 +238,127 @@ export function AuthActionPanel() {
         <span className="auth-divider-line h-px flex-1" />
       </div>
 
-      <button type="button" onClick={openSignIn} className="auth-submit-btn">
-        <span className="flex items-center justify-center gap-2">
-          Continue
-          <ArrowRightIcon className="size-4" aria-hidden />
-        </span>
-      </button>
+      {verifyStep === "email_code" ? (
+        <form onSubmit={handleVerifyCode} className="space-y-3">
+          <div className="space-y-1.5">
+            <label htmlFor="auth-verify-code" className="auth-field-label">
+              Verification code
+            </label>
+            <div className="relative">
+              <KeyRoundIcon
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--cl-outline)]"
+                aria-hidden
+              />
+              <input
+                id="auth-verify-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                className={fieldClassName}
+              />
+            </div>
+          </div>
+
+          {error && <p className="auth-form-error">{error}</p>}
+
+          <button type="submit" disabled={isSubmitting} className="auth-submit-btn">
+            {isSubmitting ? (
+              <Loader2Icon className="size-4 animate-spin" aria-hidden />
+            ) : (
+              "Verify Email"
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={backToForm}
+            className="auth-toggle-link mx-auto block"
+          >
+            Use a different email
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <label htmlFor="auth-email" className="auth-field-label">
+              Email Address
+            </label>
+            <div className="relative">
+              <MailIcon
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--cl-outline)]"
+                aria-hidden
+              />
+              <input
+                id="auth-email"
+                type="email"
+                autoComplete="email"
+                placeholder="neon@yna.io"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className={`${fieldClassName} pl-9`}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="auth-password" className="auth-field-label">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="auth-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={isSignIn ? "current-password" : "new-password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={`${fieldClassName} pr-10`}
+                minLength={8}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--cl-outline)] transition-colors hover:text-[var(--cl-glow-cyan)]"
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="size-4" aria-hidden />
+                ) : (
+                  <EyeIcon className="size-4" aria-hidden />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="auth-form-error">{error}</p>}
+
+          <button type="submit" disabled={isSubmitting} className="auth-submit-btn">
+            {isSubmitting ? (
+              <Loader2Icon className="mx-auto size-4 animate-spin" aria-hidden />
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                {isSignIn ? "Sign In" : "Create Account"}
+                <ArrowRightIcon className="size-4" aria-hidden />
+              </span>
+            )}
+          </button>
+        </form>
+      )}
 
       <div className="auth-clerk-footer">
         <div className="auth-toggle-row">
-          <span>New here?</span>
-          <button type="button" onClick={openSignUp} className="auth-toggle-link">
-            Create Account
+          <span>{isSignIn ? "New here?" : "Already have an account?"}</span>
+          <button
+            type="button"
+            onClick={() => switchMode(isSignIn ? "signup" : "signin")}
+            className="auth-toggle-link"
+          >
+            {isSignIn ? "Create Account" : "Sign In"}
           </button>
         </div>
       </div>

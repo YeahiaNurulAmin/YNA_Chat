@@ -329,6 +329,7 @@
 }
 
 .auth-field-label {
+  display: block;
   font-size: 10px;
   font-weight: 600;
   color: var(--cl-on-surface-variant);
@@ -341,26 +342,40 @@
   border: 1px solid var(--cl-border-muted);
   background: var(--cl-field-bg);
   padding: 0.7rem 0.875rem;
+  color: var(--cl-on-surface);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+.auth-field-input::placeholder {
+  color: var(--cl-outline);
+}
+
 .auth-field-input:focus {
+  outline: none;
   border-color: var(--neon-cyan);
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14);
 }
 
-.auth-field-action {
-  color: var(--neon-cyan);
+.auth-form-error {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  padding: 0.6rem 0.75rem;
   font-size: 12px;
+  color: var(--cl-status-alert);
 }
 
 .auth-submit-btn {
+  display: flex;
   width: 100%;
+  align-items: center;
+  justify-content: center;
   border-radius: 0.55rem;
   padding: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   background: linear-gradient(90deg, var(--neon-cyan), var(--neon-violet));
+  color: #04040a;
   box-shadow: 0 0 16px rgba(34, 211, 238, 0.26);
   transition: box-shadow 0.15s, filter 0.15s;
 }
@@ -368,6 +383,16 @@
 .auth-submit-btn:hover {
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.38);
   filter: brightness(1.05);
+}
+
+.auth-submit-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--cl-focus);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .auth-clerk-footer {
