@@ -5,6 +5,7 @@ import {
   connectToRoom,
   disconnectFromRoom,
   setMicrophoneMuted,
+  setSpeakerEnabled,
   waitForRoomConnected,
 } from "../hooks/useLivekitCall";
 import { useAuthStore } from "./useAuthStore";
@@ -50,6 +51,7 @@ export const useCallStore = create((set, get) => ({
   roomName: null,
   peer: null,
   isMuted: false,
+  isSpeakerOn: true,
   callerToken: null,
   connectedAt: null,
   callDurationSeconds: 0,
@@ -63,6 +65,7 @@ export const useCallStore = create((set, get) => ({
       roomName: null,
       peer: null,
       isMuted: false,
+      isSpeakerOn: true,
       callerToken: null,
       connectedAt: null,
       callDurationSeconds: 0,
@@ -225,6 +228,21 @@ export const useCallStore = create((set, get) => ({
       set({ isMuted: previousMuted });
       toast.error("Could not change microphone");
       console.error("toggleMute:", error.message);
+    }
+  },
+
+  toggleSpeaker: async () => {
+    const nextSpeakerOn = !get().isSpeakerOn;
+    const previousSpeakerOn = get().isSpeakerOn;
+
+    set({ isSpeakerOn: nextSpeakerOn });
+
+    try {
+      await setSpeakerEnabled(nextSpeakerOn);
+    } catch (error) {
+      set({ isSpeakerOn: previousSpeakerOn });
+      toast.error("Could not change speaker output");
+      console.error("toggleSpeaker:", error.message);
     }
   },
 }));

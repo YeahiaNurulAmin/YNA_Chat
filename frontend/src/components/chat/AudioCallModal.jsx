@@ -1,11 +1,14 @@
-import { Avatar, Button, Modal, useOverlayState } from "@heroui/react";
+import { Avatar, Modal, useOverlayState } from "@heroui/react";
 import {
   LoaderIcon,
+  LockIcon,
   MicIcon,
   MicOffIcon,
   PhoneIcon,
   PhoneOffIcon,
   PhoneIncomingIcon,
+  Volume2Icon,
+  VolumeXIcon,
 } from "lucide-react";
 import { useCallStore } from "../../store/useCallStore";
 import { useIncomingRingtone, useOutgoingRingback } from "../../hooks/useCallSounds";
@@ -16,10 +19,36 @@ function formatDuration(totalSeconds) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+const STATUS_LABEL = {
+  outgoing: "Ringing",
+  incoming: "Incoming Call",
+  connecting: "Connecting",
+  active: "In Call",
+  missed: "Call Ended",
+};
+
+function CallControl({ icon, label, tone = "neutral", active = false, onPress }) {
+  return (
+    <div className="cyber-call-control-wrap">
+      <button
+        type="button"
+        className={`cyber-call-control cyber-call-control--${tone}${active ? " cyber-call-control--active" : ""}`}
+        aria-label={label}
+        aria-pressed={active}
+        onClick={onPress}
+      >
+        {icon}
+      </button>
+      <span className="cyber-call-control-label">{label}</span>
+    </div>
+  );
+}
+
 export function AudioCallModal() {
   const status = useCallStore((state) => state.status);
   const peer = useCallStore((state) => state.peer);
   const isMuted = useCallStore((state) => state.isMuted);
+  const isSpeakerOn = useCallStore((state) => state.isSpeakerOn);
   const callDurationSeconds = useCallStore((state) => state.callDurationSeconds);
   const acceptCall = useCallStore((state) => state.acceptCall);
   const rejectCall = useCallStore((state) => state.rejectCall);
@@ -27,6 +56,7 @@ export function AudioCallModal() {
   const endCall = useCallStore((state) => state.endCall);
   const reset = useCallStore((state) => state.reset);
   const toggleMute = useCallStore((state) => state.toggleMute);
+  const toggleSpeaker = useCallStore((state) => state.toggleSpeaker);
 
   const isOpen = ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
 
@@ -43,105 +73,120 @@ export function AudioCallModal() {
   useIncomingRingtone(status === "incoming");
   useOutgoingRingback(status === "outgoing");
 
-  const title =
-    status === "outgoing"
-      ? "Ringing…"
-      : status === "incoming"
-        ? "Incoming call"
-        : status === "connecting"
-          ? "Connecting…"
-          : status === "active"
-            ? formatDuration(callDurationSeconds)
-            : status === "missed"
-              ? "Call not answered"
-              : "";
+  const ringing = status === "outgoing" || status === "incoming" || status === "connecting";
+
+  const statusText =
+    status === "active" ? formatDuration(callDurationSeconds) : STATUS_LABEL[status] ?? "";
 
   return (
     <Modal state={modal}>
       <Modal.Backdrop variant="opaque">
-        <Modal.Container size="sm">
-          <Modal.Dialog className="glass-modal cyber-call-dialog">
-            <Modal.Header className="flex w-full flex-col items-center gap-3 pb-2">
-              <div className="flex w-full justify-end">
-                <Modal.CloseTrigger />
+        <Modal.Container size="full">
+          <Modal.Dialog className="glass-modal cyber-call-overlay">
+            <Modal.Header className="cyber-call-topbar">
+              <div className="cyber-call-secure">
+                <LockIcon className="size-3" strokeWidth={2} />
+                End-to-end encrypted
               </div>
-              {peer ? (
-                <div className="relative">
-                  {status === "outgoing" || status === "incoming" || status === "connecting" ? (
-                    <span className="cyber-call-pulse" aria-hidden />
-                  ) : null}
-                  <div className="avatar-neon-ring rounded-full">
-                    <Avatar className="size-20">
-                      <Avatar.Image alt={peer.name} src={peer.avatarUrl} />
-                      <Avatar.Fallback className="text-xl font-semibold">{peer.initials}</Avatar.Fallback>
-                    </Avatar>
-                  </div>
-                </div>
-              ) : null}
-              <div>
-                <p className="font-mono text-lg font-medium tracking-wide text-[var(--cl-on-surface)]">
-                  {peer?.name ?? "Voice call"}
-                </p>
-                <p className="mt-1 font-mono text-xs tracking-[0.14em] uppercase text-[var(--cl-glow-cyan)]">
-                  {title}
-                </p>
-              </div>
+              <Modal.CloseTrigger />
             </Modal.Header>
 
-            <Modal.Footer className="flex w-full justify-center gap-3 pt-4">
+            <Modal.Body className="cyber-call-body">
+              {peer ? (
+                <div className="cyber-call-avatar-stage">
+                  {ringing ? (
+                    <>
+                      <span className="cyber-call-pulse cyber-call-pulse--one" aria-hidden />
+                      <span className="cyber-call-pulse cyber-call-pulse--two" aria-hidden />
+                      <span className="cyber-call-pulse cyber-call-pulse--three" aria-hidden />
+                    </>
+                  ) : null}
+                  <div className="avatar-neon-ring rounded-full">
+                    <Avatar className="size-28">
+                      <Avatar.Image alt={peer.name} src={peer.avatarUrl} />
+                      <Avatar.Fallback className="text-2xl font-semibold">{peer.initials}</Avatar.Fallback>
+                    </Avatar>
+                  </div>
+                  <span
+                    className={`cyber-call-presence${ringing ? " cyber-call-presence--ringing" : ""}`}
+                    aria-hidden
+                  />
+                </div>
+              ) : null}
+
+              <p className="cyber-call-name">{peer?.name ?? "Voice call"}</p>
+
+              <div className="cyber-call-status-row">
+                {status === "connecting" ? (
+                  <span className="cyber-call-connecting">
+                    <LoaderIcon className="size-4 animate-spin" strokeWidth={2} />
+                    Connecting to encrypted stream
+                  </span>
+                ) : (
+                  <span className="cyber-call-status-chip">{statusText}</span>
+                )}
+              </div>
+            </Modal.Body>
+
+            <Modal.Footer className="cyber-call-controls">
               {status === "outgoing" ? (
-                <Button color="danger" variant="secondary" onPress={cancelCall}>
-                  <PhoneOffIcon className="size-4" />
-                  Cancel
-                </Button>
+                <CallControl
+                  icon={<PhoneOffIcon className="size-5" strokeWidth={2} />}
+                  label="Cancel"
+                  tone="end"
+                  onPress={cancelCall}
+                />
               ) : null}
 
               {status === "incoming" ? (
                 <>
-                  <Button color="danger" variant="secondary" onPress={() => void rejectCall()}>
-                    <PhoneOffIcon className="size-4" />
-                    Decline
-                  </Button>
-                  <Button color="success" onPress={() => void acceptCall()}>
-                    <PhoneIncomingIcon className="size-4" />
-                    Accept
-                  </Button>
+                  <CallControl
+                    icon={<PhoneOffIcon className="size-5" strokeWidth={2} />}
+                    label="Decline"
+                    tone="end"
+                    onPress={() => void rejectCall()}
+                  />
+                  <CallControl
+                    icon={<PhoneIncomingIcon className="size-5" strokeWidth={2} />}
+                    label="Accept"
+                    tone="accept"
+                    onPress={() => void acceptCall()}
+                  />
                 </>
-              ) : null}
-
-              {status === "connecting" ? (
-                <Button isDisabled variant="secondary">
-                  <LoaderIcon className="size-4 animate-spin" />
-                  Connecting
-                </Button>
               ) : null}
 
               {status === "active" ? (
                 <>
-                  <Button
-                    variant={isMuted ? "primary" : "secondary"}
-                    size="lg"
-                    isIconOnly
-                    aria-pressed={isMuted}
-                    aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
-                    onPress={() => {
-                      void toggleMute();
-                    }}
-                  >
-                    {isMuted ? <MicOffIcon className="size-5" /> : <MicIcon className="size-5" />}
-                  </Button>
-                  <Button color="danger" onPress={() => void endCall()}>
-                    <PhoneOffIcon className="size-4" />
-                    End call
-                  </Button>
+                  <CallControl
+                    icon={isMuted ? <MicOffIcon className="size-5" strokeWidth={2} /> : <MicIcon className="size-5" strokeWidth={2} />}
+                    label={isMuted ? "Unmute" : "Mute"}
+                    tone="mute"
+                    active={isMuted}
+                    onPress={() => void toggleMute()}
+                  />
+                  <CallControl
+                    icon={isSpeakerOn ? <Volume2Icon className="size-5" strokeWidth={2} /> : <VolumeXIcon className="size-5" strokeWidth={2} />}
+                    label={isSpeakerOn ? "Speaker" : "Speaker off"}
+                    tone="speaker"
+                    active={!isSpeakerOn}
+                    onPress={() => void toggleSpeaker()}
+                  />
+                  <CallControl
+                    icon={<PhoneOffIcon className="size-5" strokeWidth={2} />}
+                    label="End"
+                    tone="end"
+                    onPress={() => void endCall()}
+                  />
                 </>
               ) : null}
 
               {status === "missed" ? (
-                <Button variant="secondary" onPress={reset}>
-                  <PhoneIcon className="size-4" />
-                  Close
-                </Button>
+                <CallControl
+                  icon={<PhoneIcon className="size-5" strokeWidth={2} />}
+                  label="Close"
+                  tone="neutral"
+                  onPress={reset}
+                />
               ) : null}
             </Modal.Footer>
           </Modal.Dialog>

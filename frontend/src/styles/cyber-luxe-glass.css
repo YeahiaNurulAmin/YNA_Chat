@@ -1686,13 +1686,296 @@
     0 0 32px -16px rgba(34, 211, 238, 0.25) !important;
 }
 
-.cyber-call-dialog {
-  align-items: center;
+.cyber-call-overlay {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
   text-align: center;
+  border-radius: 0 !important;
   background:
-    radial-gradient(circle at 50% 14%, rgba(34, 211, 238, 0.12), transparent 55%),
-    radial-gradient(circle at 50% 110%, rgba(255, 0, 255, 0.06), transparent 55%),
-    var(--cl-glass) !important;
+    radial-gradient(circle at 50% 12%, rgba(34, 211, 238, 0.14), transparent 48%),
+    radial-gradient(circle at 50% 108%, rgba(255, 0, 255, 0.08), transparent 52%),
+    radial-gradient(circle at 12% 90%, rgba(139, 92, 246, 0.1), transparent 42%),
+    var(--cl-modal-grad) !important;
+  border: 1px solid rgba(34, 211, 238, 0.14) !important;
+  box-shadow:
+    var(--cl-shadow-overlay),
+    0 0 42px -14px rgba(34, 211, 238, 0.28) !important;
+  overflow: hidden;
+}
+
+.cyber-call-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.09) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, black 10%, transparent 78%);
+}
+
+.cyber-call-topbar {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0 !important;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.cyber-call-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cl-outline);
+}
+
+.cyber-call-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 1.25rem 1.5rem 2rem !important;
+}
+
+.cyber-call-avatar-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.cyber-call-avatar-stage .avatar-neon-ring {
+  padding: 3px;
+  box-shadow:
+    0 0 22px rgba(34, 211, 238, 0.3),
+    0 0 48px rgba(255, 0, 255, 0.12);
+}
+
+.cyber-call-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 9999px;
+  border: 2px solid var(--neon-cyan);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: callpulse 2s ease-out infinite;
+}
+
+.cyber-call-pulse--one {
+  width: 12.5rem;
+  height: 12.5rem;
+}
+
+.cyber-call-pulse--two {
+  width: 12.5rem;
+  height: 12.5rem;
+  border-color: rgba(139, 92, 246, 0.55);
+  animation-delay: 0.66s;
+}
+
+.cyber-call-pulse--three {
+  width: 12.5rem;
+  height: 12.5rem;
+  border-color: rgba(255, 0, 255, 0.35);
+  animation-delay: 1.33s;
+}
+
+.cyber-call-presence {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 1.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 9999px;
+  background: var(--cl-status-online);
+  border: 3px solid var(--cl-glass);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.55);
+}
+
+.cyber-call-presence--ringing {
+  background: var(--cl-glow-cyan);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.65);
+  animation: call-chip-pulse 1.6s ease-in-out infinite;
+}
+
+.cyber-call-name {
+  font-family: var(--font-brand);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--cl-on-surface);
+}
+
+.cyber-call-status-row {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cyber-call-status-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.45rem 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cl-glow-cyan);
+  background: var(--cl-tint-cyan);
+  border: 1px solid var(--cl-border-cyan-strong);
+  box-shadow: 0 0 18px -6px rgba(34, 211, 238, 0.5);
+  animation: call-chip-pulse 2.6s ease-in-out infinite;
+}
+
+.cyber-call-connecting {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cl-glow-violet);
+}
+
+.cyber-call-controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 0.75rem 1.5rem 2.25rem !important;
+  flex-shrink: 0;
+}
+
+.cyber-call-control-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.cyber-call-control {
+  display: flex;
+  width: 4.25rem;
+  height: 4.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--cl-border-muted);
+  background: var(--cl-wash-1);
+  color: var(--cl-on-surface);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+
+.cyber-call-control:hover {
+  background: var(--cl-wash-2);
+  border-color: var(--cl-border-cyan-weak);
+}
+
+.cyber-call-control:focus-visible {
+  outline: none;
+  box-shadow: var(--cl-focus);
+}
+
+.cyber-call-control:active {
+  transform: scale(0.94);
+}
+
+.cyber-call-control--mute {
+  border-color: rgba(34, 211, 238, 0.35);
+  color: var(--cl-glow-cyan);
+  background: var(--cl-tint-cyan);
+  box-shadow: 0 0 18px -8px rgba(34, 211, 238, 0.55);
+}
+
+.cyber-call-control--speaker {
+  border-color: rgba(139, 92, 246, 0.4);
+  color: var(--cl-glow-violet);
+  background: var(--cl-tint-violet);
+  box-shadow: 0 0 18px -8px rgba(139, 92, 246, 0.5);
+}
+
+.cyber-call-control--end {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: var(--cl-status-alert);
+  background: rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 22px -8px rgba(239, 68, 68, 0.55);
+}
+
+.cyber-call-control--end:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.cyber-call-control--accept {
+  border-color: rgba(74, 222, 128, 0.5);
+  color: var(--cl-status-online);
+  background: rgba(74, 222, 128, 0.12);
+  box-shadow: 0 0 22px -8px rgba(74, 222, 128, 0.55);
+}
+
+.cyber-call-control--accept:hover {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: rgba(74, 222, 128, 0.7);
+}
+
+.cyber-call-control--active {
+  border-color: var(--cl-border-cyan-strong);
+  box-shadow:
+    0 0 0 3px rgba(34, 211, 238, 0.16),
+    0 0 22px -6px rgba(34, 211, 238, 0.6);
+}
+
+.cyber-call-control-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cl-on-surface-variant);
+}
+
+@media (max-width: 480px) {
+  .cyber-call-controls {
+    gap: 1.75rem;
+  }
+
+  .cyber-call-control {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
 }
 
 .cyber-emergency-dialog {
