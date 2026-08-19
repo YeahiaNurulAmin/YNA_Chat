@@ -4,8 +4,10 @@ import * as callApi from "../lib/callApi";
 import {
   connectToRoom,
   disconnectFromRoom,
+  setCameraEnabled,
   setMicrophoneMuted,
   setSpeakerEnabled,
+  switchCameraFacingMode,
   waitForRoomConnected,
 } from "../hooks/useLivekitCall";
 import { useAuthStore } from "./useAuthStore";
@@ -50,11 +52,15 @@ export const useCallStore = create((set, get) => ({
   callId: null,
   roomName: null,
   peer: null,
+  callType: "audio",
   isMuted: false,
   isSpeakerOn: true,
+  isCameraOn: false,
+  isCameraFront: true,
   callerToken: null,
   connectedAt: null,
   callDurationSeconds: 0,
+  isMinimized: false,
   error: null,
 
   reset: () => {
@@ -64,26 +70,40 @@ export const useCallStore = create((set, get) => ({
       callId: null,
       roomName: null,
       peer: null,
+      callType: "audio",
       isMuted: false,
       isSpeakerOn: true,
+      isCameraOn: false,
+      isCameraFront: true,
       callerToken: null,
       connectedAt: null,
       callDurationSeconds: 0,
+      isMinimized: false,
       error: null,
     });
   },
 
-  startCall: async (peer) => {
+  minimizeCall: () => {
+    if (!["outgoing", "incoming", "connecting", "active"].includes(get().status)) return;
+    set({ isMinimized: true });
+  },
+
+  restoreCall: () => {
+    set({ isMinimized: false });
+  },
+
+  startCall: async (peer, callType = "audio") => {
     if (get().status !== "idle") return;
 
     try {
-      const data = await callApi.inviteCall(peer.id);
+      const data = await callApi.inviteCall(peer.id, callType);
       set({
         status: "outgoing",
         callId: data.callId,
         roomName: data.roomName,
         callerToken: data.token,
         peer,
+        callType,
         error: null,
       });
     } catch (error) {
@@ -110,6 +130,7 @@ export const useCallStore = create((set, get) => ({
       status: "incoming",
       callId: payload.callId,
       roomName: payload.roomName,
+      callType: payload.callType === "video" ? "video" : "audio",
       peer: mapIncomingCaller(payload.caller),
       callerToken: null,
       error: null,
@@ -117,21 +138,30 @@ export const useCallStore = create((set, get) => ({
   },
 
   acceptCall: async () => {
-    const { callId, status } = get();
+    const { callId, status, callType } = get();
     if (status !== "incoming" || !callId) return;
 
     try {
       set({ status: "connecting", error: null });
       const data = await callApi.acceptCall(callId);
       set({ roomName: data.roomName });
-      await connectToRoom(data.token);
+      await connectToRoom(data.token, { callType });
       await waitForRoomConnected();
-      set({ status: "active", connectedAt: Date.now(), callDurationSeconds: 0 });
+      set({
+        status: "active",
+        connectedAt: Date.now(),
+        callDurationSeconds: 0,
+        isCameraOn: callType === "video",
+      });
       startDurationTimer(set);
     } catch (error) {
       const message =
-        error.name === "NotAllowedError" || error.message?.includes("Microphone")
-          ? "Microphone access denied"
+        error.name === "NotAllowedError" ||
+        error.message?.includes("Microphone") ||
+        error.message?.includes("Camera")
+          ? callType === "video"
+            ? "Camera access denied"
+            : "Microphone access denied"
           : error.response?.data?.message || "Failed to accept call";
       toast.error(message);
       await disconnectFromRoom();
@@ -153,19 +183,28 @@ export const useCallStore = create((set, get) => ({
   },
 
   handleCallAccepted: async () => {
-    const { status, callerToken } = get();
+    const { status, callerToken, callType } = get();
     if (status !== "outgoing" || !callerToken) return;
 
     try {
       set({ status: "connecting", error: null });
-      await connectToRoom(callerToken);
+      await connectToRoom(callerToken, { callType });
       await waitForRoomConnected();
-      set({ status: "active", connectedAt: Date.now(), callDurationSeconds: 0 });
+      set({
+        status: "active",
+        connectedAt: Date.now(),
+        callDurationSeconds: 0,
+        isCameraOn: callType === "video",
+      });
       startDurationTimer(set);
     } catch (error) {
       const message =
-        error.name === "NotAllowedError" || error.message?.includes("Microphone")
-          ? "Microphone access denied"
+        error.name === "NotAllowedError" ||
+        error.message?.includes("Microphone") ||
+        error.message?.includes("Camera")
+          ? callType === "video"
+            ? "Camera access denied"
+            : "Microphone access denied"
           : "Failed to connect call";
       toast.error(message);
       await disconnectFromRoom();
@@ -243,6 +282,36 @@ export const useCallStore = create((set, get) => ({
       set({ isSpeakerOn: previousSpeakerOn });
       toast.error("Could not change speaker output");
       console.error("toggleSpeaker:", error.message);
+    }
+  },
+
+  toggleCamera: async () => {
+    const nextCameraOn = !get().isCameraOn;
+    const previousCameraOn = get().isCameraOn;
+
+    set({ isCameraOn: nextCameraOn });
+
+    try {
+      await setCameraEnabled(nextCameraOn);
+    } catch (error) {
+      set({ isCameraOn: previousCameraOn });
+      toast.error("Could not toggle camera");
+      console.error("toggleCamera:", error.message);
+    }
+  },
+
+  switchCamera: async () => {
+    const nextCameraFront = !get().isCameraFront;
+    const previousCameraFront = get().isCameraFront;
+
+    set({ isCameraFront: nextCameraFront });
+
+    try {
+      await switchCameraFacingMode();
+    } catch (error) {
+      set({ isCameraFront: previousCameraFront });
+      toast.error("Could not switch camera");
+      console.error("switchCamera:", error.message);
     }
   },
 }));

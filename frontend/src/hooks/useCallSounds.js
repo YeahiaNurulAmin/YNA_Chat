@@ -92,9 +92,41 @@ function useCallSoundLoop(isActive, scheduleCycle) {
 }
 
 export function useIncomingRingtone(isActive) {
-  useCallSoundLoop(isActive, scheduleIncomingRing);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (!isActive) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      return;
+    }
+
+    const audio = new Audio("/sounds/incoming-ringtone.mp3");
+    audio.loop = true;
+    audio.volume = 0.7;
+    audioRef.current = audio;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn("Incoming ringtone autoplay prevented or failed:", err);
+      });
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
+  }, [isActive]);
 }
 
 export function useOutgoingRingback(isActive) {
   useCallSoundLoop(isActive, scheduleOutgoingRingback);
 }
+

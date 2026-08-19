@@ -36,14 +36,14 @@ export function ChatHeader() {
   const canStartCall =
     Boolean(activeConversation?.peer.isOnline) && callStatus === "idle";
 
-  const handleStartCall = () => {
+  const handleStartCall = (callType) => {
     if (!activeConversation || !canStartCall) return;
     void startCall({
       id: activeConversation.id,
       name: activeConversation.peer.name,
       avatarUrl: activeConversation.peer.avatarUrl,
       initials: activeConversation.peer.initials,
-    });
+    }, callType);
   };
 
   if (!activeConversation) {
@@ -100,9 +100,10 @@ export function ChatHeader() {
         <button
           type="button"
           className="cyber-header-icon hidden sm:flex text-[var(--cl-glow-violet)] border-[rgba(139,92,246,0.4)]"
-          disabled
-          aria-label="Video call (coming soon)"
-          title="Video calls coming soon"
+          disabled={!canStartCall}
+          aria-label="Start video call"
+          title="Start video call"
+          onClick={() => handleStartCall("video")}
         >
           <VideoIcon className="size-4" strokeWidth={2} />
         </button>
@@ -112,7 +113,7 @@ export function ChatHeader() {
           className="cyber-header-icon"
           disabled={!canStartCall}
           aria-label="Start voice call"
-          onClick={handleStartCall}
+          onClick={() => handleStartCall("audio")}
         >
           <PhoneIcon className="size-4" strokeWidth={2} />
         </button>

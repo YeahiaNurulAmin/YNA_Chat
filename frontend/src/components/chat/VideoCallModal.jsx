@@ -1,5 +1,7 @@
 import { Avatar, Modal, useOverlayState } from "@heroui/react";
 import {
+  CameraIcon,
+  CameraOffIcon,
   LoaderIcon,
   LockIcon,
   MicIcon,
@@ -7,12 +9,16 @@ import {
   PhoneIcon,
   PhoneOffIcon,
   PhoneIncomingIcon,
+  RefreshCwIcon,
   Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
 import { useCallStore } from "../../store/useCallStore";
+import { useCallMediaState } from "../../hooks/useLivekitCall";
 import { useIncomingRingtone, useOutgoingRingback } from "../../hooks/useCallSounds";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { CallControl } from "./CallControl";
+import { LocalVideoFeed, RemoteVideoFeed } from "./VideoFeeds";
 
 function formatDuration(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -22,18 +28,19 @@ function formatDuration(totalSeconds) {
 
 const STATUS_LABEL = {
   outgoing: "Ringing",
-  incoming: "Incoming Call",
+  incoming: "Incoming Video Call",
   connecting: "Connecting",
   active: "In Call",
   missed: "Call Ended",
 };
 
-export function AudioCallModal() {
+export function VideoCallModal() {
   const status = useCallStore((state) => state.status);
   const callType = useCallStore((state) => state.callType);
   const peer = useCallStore((state) => state.peer);
   const isMuted = useCallStore((state) => state.isMuted);
   const isSpeakerOn = useCallStore((state) => state.isSpeakerOn);
+  const isCameraOn = useCallStore((state) => state.isCameraOn);
   const callDurationSeconds = useCallStore((state) => state.callDurationSeconds);
   const acceptCall = useCallStore((state) => state.acceptCall);
   const rejectCall = useCallStore((state) => state.rejectCall);
@@ -42,11 +49,16 @@ export function AudioCallModal() {
   const reset = useCallStore((state) => state.reset);
   const toggleMute = useCallStore((state) => state.toggleMute);
   const toggleSpeaker = useCallStore((state) => state.toggleSpeaker);
+  const toggleCamera = useCallStore((state) => state.toggleCamera);
+  const switchCamera = useCallStore((state) => state.switchCamera);
   const isMinimized = useCallStore((state) => state.isMinimized);
   const minimizeCall = useCallStore((state) => state.minimizeCall);
 
-  const isAudio = callType === "audio";
-  const isOpen = isAudio && !isMinimized && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
+  const { remoteVideoTrack, remoteVideoMuted, localCameraTrack } = useCallMediaState();
+  const isMobile = useMediaQuery("(max-width: 767px)");
+
+  const isVideo = callType === "video";
+  const isOpen = isVideo && !isMinimized && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
 
   const modal = useOverlayState({
     isOpen,
@@ -60,21 +72,23 @@ export function AudioCallModal() {
     },
   });
 
-  useIncomingRingtone(isAudio && status === "incoming");
-  useOutgoingRingback(isAudio && status === "outgoing");
+  useIncomingRingtone(isVideo && status === "incoming");
+  useOutgoingRingback(isVideo && status === "outgoing");
 
-  if (!isAudio) return null;
+  if (!isVideo) return null;
 
   const ringing = status === "outgoing" || status === "incoming" || status === "connecting";
 
   const statusText =
     status === "active" ? formatDuration(callDurationSeconds) : STATUS_LABEL[status] ?? "";
 
+  const remoteVideoVisible = Boolean(remoteVideoTrack) && !remoteVideoMuted;
+
   return (
     <Modal state={modal}>
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="full">
-          <Modal.Dialog className="glass-modal cyber-call-overlay">
+          <Modal.Dialog className="glass-modal cyber-call-overlay cyber-video-call-overlay">
             <Modal.Header className="cyber-call-topbar">
               <div className="cyber-call-secure">
                 <LockIcon className="size-3" strokeWidth={2} />
@@ -83,8 +97,40 @@ export function AudioCallModal() {
               <Modal.CloseTrigger />
             </Modal.Header>
 
-            <Modal.Body className="cyber-call-body">
-              {peer ? (
+            <Modal.Body
+              className={`cyber-call-body${status === "active" ? " cyber-video-call-body" : ""}`}
+            >
+              {status === "active" ? (
+                <div className="cyber-video-stage">
+                  <div className="cyber-video-remote">
+                    {remoteVideoVisible ? (
+                      <RemoteVideoFeed className="cyber-video-feed" />
+                    ) : (
+                      <div className="cyber-video-remote-fallback">
+                        <div className="avatar-neon-ring rounded-full">
+                          <Avatar className="size-24">
+                            <Avatar.Image alt={peer?.name} src={peer?.avatarUrl} />
+                            <Avatar.Fallback className="text-xl font-semibold">
+                              {peer?.initials}
+                            </Avatar.Fallback>
+                          </Avatar>
+                        </div>
+                        <span className="cyber-video-fallback-label">Camera is off</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="cyber-video-pip">
+                    {localCameraTrack && isCameraOn ? (
+                      <LocalVideoFeed className="cyber-video-feed cyber-video-pip-feed" />
+                    ) : (
+                      <div className="cyber-video-pip-fallback">
+                        <CameraOffIcon className="size-5" strokeWidth={2} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
                 <div className="cyber-call-avatar-stage">
                   {ringing ? (
                     <>
@@ -95,8 +141,10 @@ export function AudioCallModal() {
                   ) : null}
                   <div className="avatar-neon-ring rounded-full">
                     <Avatar className="size-28">
-                      <Avatar.Image alt={peer.name} src={peer.avatarUrl} />
-                      <Avatar.Fallback className="text-2xl font-semibold">{peer.initials}</Avatar.Fallback>
+                      <Avatar.Image alt={peer?.name} src={peer?.avatarUrl} />
+                      <Avatar.Fallback className="text-2xl font-semibold">
+                        {peer?.initials}
+                      </Avatar.Fallback>
                     </Avatar>
                   </div>
                   <span
@@ -104,9 +152,9 @@ export function AudioCallModal() {
                     aria-hidden
                   />
                 </div>
-              ) : null}
+              )}
 
-              <p className="cyber-call-name">{peer?.name ?? "Voice call"}</p>
+              <p className="cyber-call-name">{peer?.name ?? "Video call"}</p>
 
               <div className="cyber-call-status-row">
                 {status === "connecting" ? (
@@ -120,7 +168,7 @@ export function AudioCallModal() {
               </div>
             </Modal.Body>
 
-            <Modal.Footer className="cyber-call-controls">
+            <Modal.Footer className="cyber-call-controls cyber-video-call-controls">
               {status === "outgoing" ? (
                 <CallControl
                   icon={<PhoneOffIcon className="size-5" strokeWidth={2} />}
@@ -156,6 +204,21 @@ export function AudioCallModal() {
                     active={isMuted}
                     onPress={() => void toggleMute()}
                   />
+                  <CallControl
+                    icon={isCameraOn ? <CameraIcon className="size-5" strokeWidth={2} /> : <CameraOffIcon className="size-5" strokeWidth={2} />}
+                    label={isCameraOn ? "Camera on" : "Camera off"}
+                    tone="mute"
+                    active={!isCameraOn}
+                    onPress={() => void toggleCamera()}
+                  />
+                  {isMobile ? (
+                    <CallControl
+                      icon={<RefreshCwIcon className="size-5" strokeWidth={2} />}
+                      label="Flip camera"
+                      tone="speaker"
+                      onPress={() => void switchCamera()}
+                    />
+                  ) : null}
                   <CallControl
                     icon={isSpeakerOn ? <Volume2Icon className="size-5" strokeWidth={2} /> : <VolumeXIcon className="size-5" strokeWidth={2} />}
                     label={isSpeakerOn ? "Speaker" : "Speaker off"}
