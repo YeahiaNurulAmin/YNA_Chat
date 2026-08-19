@@ -29,6 +29,12 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  updateAuthUser: (patch) => {
+    set((state) => ({
+      authUser: state.authUser ? { ...state.authUser, ...patch } : state.authUser,
+    }));
+  },
+
   clearAuth: () => {
     set({ authUser: null, isCheckingAuth: false, onlineUsers: [] });
     get().disconnectSocket();

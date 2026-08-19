@@ -3,7 +3,7 @@
  * and security. Opened from the sidebar gear / header menu inside ChatPage.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Check,
@@ -24,9 +24,12 @@ import { applyThemePresetToDocument, useTheme } from "../../context/theme";
 import { HERO_UI_THEME_PRESETS } from "../../data/herouiThemePresets";
 import { RGB_THEME_PRESETS, RGB_SPEEDS, RGB_INTENSITIES } from "../../data/rgbPresets";
 import { getInitials } from "../../hooks/useSelectedConversation";
+import { ProfileEditModal } from "./ProfileEditModal";
 
 export function SettingsPage() {
   const setSettingsOpen = useChatStore((state) => state.setSettingsOpen);
+
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   const isNotificationSoundEnabled = useChatStore((state) => state.isNotificationSoundEnabled);
   const isKeyboardSoundEnabled = useChatStore((state) => state.isKeyboardSoundEnabled);
@@ -97,7 +100,11 @@ export function SettingsPage() {
                 {authUser?.email}
               </p>
             </div>
-            <button type="button" className="settings-edit-btn">
+            <button
+              type="button"
+              className="settings-edit-btn"
+              onClick={() => setIsProfileEditOpen(true)}
+            >
               Edit
             </button>
           </div>
@@ -265,6 +272,9 @@ export function SettingsPage() {
           </button>
         </section>
       </div>
+      {isProfileEditOpen ? (
+        <ProfileEditModal isOpen onOpenChange={setIsProfileEditOpen} />
+      ) : null}
     </div>
   );
 }
