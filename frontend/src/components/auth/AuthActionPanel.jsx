@@ -1,82 +1,119 @@
 /**
- * Auth action column with Clerk continue button.
- * Used by the unused split-layout auth composition.
+ * Auth action card with Clerk sign-in / sign-up triggers.
  */
 
 import { useClerk } from "@clerk/react";
-import { Button } from "@heroui/react";
-import { ArrowRightIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
-import { AppLogo } from "../AppLogo";
+import { ArrowRightIcon } from "lucide-react";
 import { AuthCardShell } from "./AuthCardShell";
 
 const AFTER_AUTH = "/";
 
-const logoTileClassName = [
-  "relative rounded-lg p-2",
-  "bg-[var(--cl-glass)] ring-1 ring-cyan-400/20",
-  "shadow-[0_0_18px_-6px] shadow-cyan-400/30",
-].join(" ");
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-4.5" aria-hidden>
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
 
-const continueButtonClassName = [
-  "group relative h-13 overflow-hidden rounded-md text-[15px] font-semibold",
-  "bg-linear-to-r from-cyan-400 to-violet-500 text-[#04040a]",
-  "shadow-[0_0_18px_-4px_rgba(34,211,238,0.45)]",
-].join(" ");
+function GitHubIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-4.5 text-[var(--cl-on-surface)]"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-4.5 text-[var(--cl-on-surface)]"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z" />
+    </svg>
+  );
+}
+
+const socialProviders = [
+  { label: "Google", Icon: GoogleIcon },
+  { label: "GitHub", Icon: GitHubIcon },
+  { label: "X", Icon: XIcon },
+];
 
 export function AuthActionPanel() {
   const clerk = useClerk();
 
+  const openSignIn = () => {
+    clerk.openSignIn({ fallbackRedirectUrl: AFTER_AUTH, forceRedirectUrl: AFTER_AUTH });
+  };
+
+  const openSignUp = () => {
+    clerk.openSignUp({ fallbackRedirectUrl: AFTER_AUTH, forceRedirectUrl: AFTER_AUTH });
+  };
+
   return (
-    <section className="relative flex flex-1 flex-col items-stretch justify-center overflow-hidden px-5 py-12 sm:px-10 md:px-14 md:py-10 lg:px-16">
-      <AuthCardShell>
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="relative mb-5">
-            <div
-              aria-hidden
-              className="absolute -inset-3.5 rounded-[16px] bg-linear-to-br from-cyan-400/20 via-violet-500/8 to-transparent opacity-90 blur-xl"
-            />
-            <div className={logoTileClassName}>
-              <AppLogo size={52} className="rounded-xl" alt="" />
-            </div>
-          </div>
+    <AuthCardShell>
+      <h2 className="auth-card-heading">Welcome Back</h2>
+      <p className="auth-card-subheading">Enter your credentials to access the grid</p>
 
-          <div className="flex items-center justify-center gap-1.5 text-accent">
-            <SparklesIcon className="size-3.5" strokeWidth={2} aria-hidden />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">
-              Secure entry
-            </span>
-          </div>
-        </div>
-
-        {
-          <Button
-            fullWidth
-            size="lg"
-            variant="primary"
-            className={continueButtonClassName}
-            onPress={() => {
-              clerk.openSignIn({ fallbackRedirectUrl: AFTER_AUTH, forceRedirectUrl: AFTER_AUTH });
-            }}
+      <div className="mt-6 grid grid-cols-3 gap-2.5">
+        {socialProviders.map(({ label, Icon }) => (
+          <button
+            key={label}
+            type="button"
+            aria-label={`Continue with ${label}`}
+            onClick={openSignIn}
+            className="auth-social-btn"
           >
-            <span className="relative z-1 flex items-center justify-center gap-2">
-              Continue
-              <ArrowRightIcon
-                className="size-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden
-              />
-            </span>
-          </Button>
-        }
+            <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+          </button>
+        ))}
+      </div>
 
-        <div className="mt-8 flex items-center justify-center gap-2 border-t border-white/6 pt-6 text-[11px] text-[var(--cl-on-surface-variant)]">
-          <ShieldCheckIcon
-            className="size-3.5 shrink-0 text-success"
-            strokeWidth={2}
-            aria-hidden
-          />
-          <span>Protected session · TLS encryption</span>
+      <div className="auth-divider-row relative flex items-center gap-3">
+        <span className="auth-divider-line h-px flex-1" />
+        <span className="auth-divider-text">Or continue with</span>
+        <span className="auth-divider-line h-px flex-1" />
+      </div>
+
+      <button type="button" onClick={openSignIn} className="auth-submit-btn">
+        <span className="flex items-center justify-center gap-2">
+          Continue
+          <ArrowRightIcon className="size-4" aria-hidden />
+        </span>
+      </button>
+
+      <div className="auth-clerk-footer">
+        <div className="auth-toggle-row">
+          <span>New here?</span>
+          <button type="button" onClick={openSignUp} className="auth-toggle-link">
+            Create Account
+          </button>
         </div>
-      </AuthCardShell>
-    </section>
+      </div>
+    </AuthCardShell>
   );
 }

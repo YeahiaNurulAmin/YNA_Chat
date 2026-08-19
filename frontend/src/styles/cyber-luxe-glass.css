@@ -1776,30 +1776,6 @@
   background: var(--cl-wash-4);
 }
 
-/* ── Auth utility cluster ── */
-
-.auth-utility-cluster .cyber-header-icon,
-.cyber-settings-tools .cyber-header-icon {
-  width: 2rem;
-  height: 2rem;
-  border-color: rgba(139, 92, 246, 0.3);
-  color: var(--cl-glow-violet);
-}
-
-.auth-utility-cluster .cyber-header-icon:hover,
-.cyber-settings-tools .cyber-header-icon:hover {
-  border-color: rgba(139, 92, 246, 0.6);
-  color: var(--cl-glow-cyan);
-}
-
-.auth-utility-cluster .cyber-header-icon[aria-pressed="true"],
-.cyber-settings-tools .cyber-header-icon[aria-pressed="true"] {
-  color: var(--cl-glow-cyan);
-  border-color: rgba(34, 211, 238, 0.5);
-  background: rgba(34, 211, 238, 0.08) !important;
-  box-shadow: 0 0 12px -4px rgba(34, 211, 238, 0.4);
-}
-
 /* ── Scrollbars ── */
 
 .app-shell,
