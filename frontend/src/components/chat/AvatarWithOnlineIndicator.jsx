@@ -4,7 +4,7 @@
  */
 export function AvatarWithOnlineIndicator({ isOnline, children, dotClassName = "" }) {
   return (
-    <div className="relative inline-flex shrink-0">
+    <div className="avatar-neon-ring relative inline-flex shrink-0 rounded-full">
       {children}
       <span
         className={`pointer-events-none absolute bottom-0 right-0 z-10 size-[11px] rounded-full border-[2.5px] border-[var(--cl-bg)] ${isOnline ? "bg-[var(--cl-status-online)] status-online-bloom" : "bg-[var(--cl-outline)]"} ${dotClassName}`}

@@ -1,3 +1,8 @@
+/**
+ * Collapsed live-location message group in the chat stream.
+ * Used by MessageList for consecutive live-location updates.
+ */
+
 import { MessageLocation } from "./MessageLocation";
 
 export function LiveLocationGroup({ group }) {
@@ -8,10 +13,8 @@ export function LiveLocationGroup({ group }) {
   return (
     <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[min(90%,28rem)] rounded-2xl px-3 py-2 text-[15px] leading-snug sm:max-w-[min(75%,28rem)] sm:px-3.5 ${
-          isOwnMessage
-            ? "rounded-br-md bg-accent text-accent-foreground"
-            : "rounded-bl-md bg-surface"
+        className={`live-location-card ${
+          isOwnMessage ? "live-location-card--own" : "live-location-card--peer"
         }`}
       >
         <MessageLocation
@@ -20,11 +23,7 @@ export function LiveLocationGroup({ group }) {
           time={latest.time}
           isOwnMessage={isOwnMessage}
         />
-        <p
-          className={`text-[11px] tabular-nums ${
-            isOwnMessage ? "text-accent-foreground/75" : "text-muted"
-          }`}
-        >
+        <p className="font-mono text-[11px] tabular-nums text-[var(--cl-outline)]">
           {messages.length} update{messages.length === 1 ? "" : "s"} · Last at {latest.time}
         </p>
       </div>

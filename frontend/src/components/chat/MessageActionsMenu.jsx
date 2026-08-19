@@ -31,7 +31,7 @@ export function MessageActionsMenu({ isOwnMessage, onReply, onForward, onDelete 
         aria-expanded={isOpen}
         className={`size-6 min-w-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 ${
           isOpen ? "opacity-100" : ""
-        } ${isOwnMessage ? "text-white/70 hover:text-white" : "text-[var(--cl-outline)] hover:text-[var(--cl-on-surface)]"}`}
+        } text-[var(--cl-outline)] hover:text-[var(--cl-on-surface)]`}
         onPress={() => setIsOpen((open) => !open)}
       >
         <MoreVerticalIcon className="size-4" strokeWidth={2} aria-hidden />
@@ -45,7 +45,7 @@ export function MessageActionsMenu({ isOwnMessage, onReply, onForward, onDelete 
           <button
             type="button"
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--cl-on-surface)] hover:bg-[rgba(34,211,238,0.06)]"
             onClick={() => {
               onReply();
               closeMenu();
@@ -57,7 +57,7 @@ export function MessageActionsMenu({ isOwnMessage, onReply, onForward, onDelete 
           <button
             type="button"
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--cl-on-surface)] hover:bg-[rgba(34,211,238,0.06)]"
             onClick={() => {
               onForward();
               closeMenu();

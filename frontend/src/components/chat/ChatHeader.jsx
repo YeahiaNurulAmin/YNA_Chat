@@ -5,7 +5,6 @@ import {
   VideoIcon,
 } from "lucide-react";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
-import { ChatHeaderMenu } from "./ChatHeaderMenu";
 import { useChatStore } from "../../store/useChatStore";
 import { useCallStore } from "../../store/useCallStore";
 import { useSelectedConversation } from "../../hooks/useSelectedConversation";
@@ -51,7 +50,6 @@ export function ChatHeader() {
     return (
       <header className="cyber-terminal-header">
         <p className="headline-md flex-1 text-center sm:text-left">Select a conversation</p>
-        <ChatHeaderMenu />
       </header>
     );
   }
@@ -101,7 +99,7 @@ export function ChatHeader() {
 
         <button
           type="button"
-          className="cyber-header-icon hidden sm:flex"
+          className="cyber-header-icon hidden sm:flex text-[var(--cl-glow-violet)] border-[rgba(139,92,246,0.4)]"
           disabled
           aria-label="Video call (coming soon)"
           title="Video calls coming soon"
@@ -118,8 +116,6 @@ export function ChatHeader() {
         >
           <PhoneIcon className="size-4" strokeWidth={2} />
         </button>
-
-        <ChatHeaderMenu />
       </div>
     </header>
   );

@@ -68,6 +68,13 @@ export async function disconnectFromRoom() {
   await currentRoom.disconnect();
 }
 
+export function setSpeakerEnabled(enabled) {
+  const volume = enabled ? 1 : 0;
+  for (const element of remoteAudioElements) {
+    element.volume = volume;
+  }
+}
+
 export async function setMicrophoneMuted(isMuted) {
   const activeRoom = getLivekitRoom();
   if (!activeRoom) {

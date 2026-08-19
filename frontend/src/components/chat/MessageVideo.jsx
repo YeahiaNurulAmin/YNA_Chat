@@ -75,9 +75,11 @@ export function MessageVideo({ src }) {
       <Modal.Root state={modal}>
         <Modal.Backdrop variant="opaque">
           <Modal.Container size="lg" placement="center">
-            <Modal.Dialog className="max-h-[90dvh] w-[min(96vw,56rem)] border border-border bg-surface p-0 shadow-2xl">
-              <Modal.Header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                <Modal.Heading className="text-base font-semibold">Video</Modal.Heading>
+            <Modal.Dialog className="glass-modal max-h-[90dvh] w-[min(96vw,56rem)] p-0">
+              <Modal.Header className="cyber-modal-header flex items-center justify-between gap-3 px-4 py-3">
+                <Modal.Heading className="font-mono text-sm font-medium tracking-[0.12em] uppercase text-[var(--cl-glow-cyan)]">
+                  Video
+                </Modal.Heading>
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" onPress={enterNativeFullscreen}>
                     Fullscreen

@@ -44,6 +44,7 @@ export const useChatStore = create(
       activeConversationId: null,
       searchQuery: "",
       sidebarTab: "chats",
+      isSettingsOpen: false,
       composerText: "",
       isKeyboardSoundEnabled: true,
       isNotificationSoundEnabled: true,
@@ -322,6 +323,7 @@ export const useChatStore = create(
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),
       setSidebarTab: (sidebarTab) => set({ sidebarTab }),
+      setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
       setComposerText: (composerText) => set({ composerText }),
       setKeyboardSoundEnabled: (isKeyboardSoundEnabled) => set({ isKeyboardSoundEnabled }),
 

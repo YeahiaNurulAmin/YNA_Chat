@@ -198,14 +198,16 @@ export function LocationPickerModal({ isOpen, onOpenChange, onSend, isSending = 
           scroll="inside"
           placement="center"
         >
-          <Modal.Dialog className="flex h-dvh w-full max-h-none max-w-none flex-col rounded-none border-0 bg-surface text-foreground shadow-none">
-            <Modal.Header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <Modal.Heading className="text-lg font-semibold">Send location</Modal.Heading>
+          <Modal.Dialog className="flex h-dvh w-full max-h-none max-w-none flex-col rounded-none border-0 bg-[var(--cl-bg)] text-[var(--cl-on-surface)] shadow-none">
+            <Modal.Header className="cyber-modal-header flex shrink-0 items-center justify-between gap-3 px-4 py-3">
+              <Modal.Heading className="font-mono text-sm font-medium tracking-[0.12em] uppercase text-[var(--cl-glow-cyan)]">
+                Send location
+              </Modal.Heading>
               <Modal.CloseTrigger />
             </Modal.Header>
 
             <Modal.Body className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0">
-              <p className="shrink-0 px-4 py-3 text-sm text-muted">
+              <p className="shrink-0 px-4 py-3 text-sm text-[var(--cl-on-surface-variant)]">
                 Tap the map to pick a spot, drag the pin, or use your current location.
               </p>
 
@@ -218,12 +220,12 @@ export function LocationPickerModal({ isOpen, onOpenChange, onSend, isSending = 
                 ) : null}
               </div>
 
-              <div className="shrink-0 space-y-3 border-t border-border bg-surface px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="shrink-0 space-y-3 border-t border-[var(--cl-border)] bg-[var(--cl-surface-container)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 {selectedCoords ? (
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="font-mono text-sm font-medium text-[var(--cl-on-surface)]">
                     {formatCoordinates(selectedCoords.latitude, selectedCoords.longitude)}
                     {selectedAccuracy != null ? (
-                      <span className="ml-2 text-xs font-normal text-muted">
+                      <span className="ml-2 text-xs font-normal text-[var(--cl-outline)]">
                         ±{Math.round(selectedAccuracy)} m
                       </span>
                     ) : null}

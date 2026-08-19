@@ -494,7 +494,7 @@ export function ChatComposer() {
           </div>
         </div>
       ) : isRecording ? (
-        <div className="composer-session-card">
+        <div className="composer-session-card composer-session-card--alert">
           <div className="flex min-w-0 items-center gap-2">
             <span
               className="size-2.5 shrink-0 animate-pulse rounded-full bg-[var(--cl-status-alert)]"

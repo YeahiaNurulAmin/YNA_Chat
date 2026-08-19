@@ -9,6 +9,7 @@ import { ChannelIntel } from "../components/chat/ChannelIntel";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { MessageList } from "../components/chat/MessageList";
 import { ChatComposer } from "../components/chat/ChatComposer";
+import { SettingsPage } from "../components/chat/SettingsPage";
 
 function ChatPage() {
   const { rgbStyle, showGlow } = useRgb();
@@ -17,6 +18,7 @@ function ChatPage() {
   const getMessages = useChatStore((state) => state.getMessages);
   const getUsers = useChatStore((state) => state.getUsers);
   const markConversationRead = useChatStore((state) => state.markConversationRead);
+  const isSettingsOpen = useChatStore((state) => state.isSettingsOpen);
 
   const { activeConversation, activeConversationId, isLargeScreen } = useSelectedConversation();
 
@@ -41,25 +43,31 @@ function ChatPage() {
     <div className="app-shell">
       <div className="app-shell-backdrop" aria-hidden />
       <div
-        className="cyber-rgb-frame rgb-border-glow shadow-2xl"
+        className="cyber-rgb-frame rgb-border-glow"
         style={rgbStyle}
       >
         {showGlow && <div className="rgb-backdrop-glow" />}
         <div className="cyber-frame-inner">
-          <ChatSidebar />
+          {isSettingsOpen ? (
+            <SettingsPage />
+          ) : (
+            <>
+              <ChatSidebar />
 
-          <div
-            className={`cyber-chat-stage ${
-              !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
-            }`}
-          >
-            <div className="cyber-glass-panel cyber-main-panel flex flex-col overflow-hidden">
-              <ChatHeader />
-              <MessageList displayMessages={activeConversation?.messages} />
-              <ChatComposer />
-            </div>
-            {activeConversation ? <ChannelIntel /> : null}
-          </div>
+              <div
+                className={`cyber-chat-stage ${
+                  !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
+                }`}
+              >
+                <div className="cyber-glass-panel cyber-main-panel flex flex-col overflow-hidden">
+                  <ChatHeader />
+                  <MessageList displayMessages={activeConversation?.messages} />
+                  <ChatComposer />
+                </div>
+                {activeConversation ? <ChannelIntel /> : null}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

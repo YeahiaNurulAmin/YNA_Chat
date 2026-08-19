@@ -36,39 +36,23 @@ export function MessageDocument({ url, isOwnMessage = false }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`mb-1.5 flex min-w-48 max-w-full items-center gap-3 rounded-xl border p-2.5 transition-opacity hover:opacity-90 sm:min-w-56 sm:p-3 ${
-        isOwnMessage
-          ? "border-accent-foreground/20 bg-accent-foreground/10 text-accent-foreground"
-          : "border-border bg-background/60 text-foreground"
-      }`}
+      className="msg-doc"
     >
-      <div
-        className={`flex size-10 shrink-0 items-center justify-center rounded-lg sm:size-11 ${
-          isOwnMessage ? "bg-accent-foreground/15" : "bg-accent/10"
-        }`}
-      >
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[rgba(34,211,238,0.1)] sm:size-11">
         <Icon
-          className={`size-5 sm:size-[1.35rem] ${isOwnMessage ? "text-accent-foreground" : "text-accent"}`}
+          className={`size-5 sm:size-[1.35rem] ${isOwnMessage ? "text-[var(--cl-glow-magenta)]" : "text-[var(--cl-glow-cyan)]"}`}
           strokeWidth={1.75}
         />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium leading-tight">{displayName}</p>
-        <p
-          className={`mt-0.5 truncate text-xs ${
-            isOwnMessage ? "text-accent-foreground/70" : "text-muted"
-          }`}
-        >
+        <p className="truncate text-sm font-medium leading-tight text-[var(--cl-on-surface)]">{displayName}</p>
+        <p className="mt-0.5 truncate text-xs text-[var(--cl-outline)]">
           {typeLabel}
         </p>
       </div>
 
-      <span
-        className={`shrink-0 text-xs font-medium ${
-          isOwnMessage ? "text-accent-foreground/80" : "text-accent"
-        }`}
-      >
+      <span className={`shrink-0 text-xs font-medium ${isOwnMessage ? "text-[var(--cl-glow-magenta)]" : "text-[var(--cl-glow-cyan)]"}`}>
         Open
       </span>
     </a>
