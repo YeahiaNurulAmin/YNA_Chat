@@ -42,16 +42,20 @@ export function AudioCallModal() {
   const reset = useCallStore((state) => state.reset);
   const toggleMute = useCallStore((state) => state.toggleMute);
   const toggleSpeaker = useCallStore((state) => state.toggleSpeaker);
+  const isMinimized = useCallStore((state) => state.isMinimized);
+  const minimizeCall = useCallStore((state) => state.minimizeCall);
 
   const isAudio = callType === "audio";
-  const isOpen = isAudio && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
+  const isOpen = isAudio && !isMinimized && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
 
   const modal = useOverlayState({
     isOpen,
     onOpenChange: (open) => {
-      if (!open && ["outgoing", "incoming"].includes(status)) {
-        if (status === "outgoing") cancelCall();
-        if (status === "incoming") void rejectCall();
+      if (open) return;
+      if (["outgoing", "incoming", "connecting", "active"].includes(status)) {
+        minimizeCall();
+      } else if (status === "missed") {
+        reset();
       }
     },
   });

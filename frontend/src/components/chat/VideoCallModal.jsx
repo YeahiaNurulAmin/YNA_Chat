@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { Avatar, Modal, useOverlayState } from "@heroui/react";
 import {
   CameraIcon,
@@ -19,6 +18,7 @@ import { useCallMediaState } from "../../hooks/useLivekitCall";
 import { useIncomingRingtone, useOutgoingRingback } from "../../hooks/useCallSounds";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { CallControl } from "./CallControl";
+import { LocalVideoFeed, RemoteVideoFeed } from "./VideoFeeds";
 
 function formatDuration(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -51,40 +51,23 @@ export function VideoCallModal() {
   const toggleSpeaker = useCallStore((state) => state.toggleSpeaker);
   const toggleCamera = useCallStore((state) => state.toggleCamera);
   const switchCamera = useCallStore((state) => state.switchCamera);
+  const isMinimized = useCallStore((state) => state.isMinimized);
+  const minimizeCall = useCallStore((state) => state.minimizeCall);
 
   const { remoteVideoTrack, remoteVideoMuted, localCameraTrack } = useCallMediaState();
-
-  const remoteVideoRef = useRef(null);
-  const localVideoRef = useRef(null);
   const isMobile = useMediaQuery("(max-width: 767px)");
 
-  useEffect(() => {
-    const element = remoteVideoRef.current;
-    if (!element || !remoteVideoTrack || remoteVideoMuted) return;
-    remoteVideoTrack.attach(element);
-    return () => {
-      remoteVideoTrack.detach(element);
-    };
-  }, [remoteVideoTrack, remoteVideoMuted]);
-
-  useEffect(() => {
-    const element = localVideoRef.current;
-    if (!element || !localCameraTrack || !isCameraOn) return;
-    localCameraTrack.attach(element);
-    return () => {
-      localCameraTrack.detach(element);
-    };
-  }, [localCameraTrack, isCameraOn]);
-
   const isVideo = callType === "video";
-  const isOpen = isVideo && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
+  const isOpen = isVideo && !isMinimized && ["outgoing", "incoming", "connecting", "active", "missed"].includes(status);
 
   const modal = useOverlayState({
     isOpen,
     onOpenChange: (open) => {
-      if (!open && ["outgoing", "incoming"].includes(status)) {
-        if (status === "outgoing") cancelCall();
-        if (status === "incoming") void rejectCall();
+      if (open) return;
+      if (["outgoing", "incoming", "connecting", "active"].includes(status)) {
+        minimizeCall();
+      } else if (status === "missed") {
+        reset();
       }
     },
   });
@@ -121,12 +104,7 @@ export function VideoCallModal() {
                 <div className="cyber-video-stage">
                   <div className="cyber-video-remote">
                     {remoteVideoVisible ? (
-                      <video
-                        ref={remoteVideoRef}
-                        autoPlay
-                        playsInline
-                        className="cyber-video-feed"
-                      />
+                      <RemoteVideoFeed className="cyber-video-feed" />
                     ) : (
                       <div className="cyber-video-remote-fallback">
                         <div className="avatar-neon-ring rounded-full">
@@ -144,13 +122,7 @@ export function VideoCallModal() {
 
                   <div className="cyber-video-pip">
                     {localCameraTrack && isCameraOn ? (
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="cyber-video-feed cyber-video-pip-feed"
-                      />
+                      <LocalVideoFeed className="cyber-video-feed cyber-video-pip-feed" />
                     ) : (
                       <div className="cyber-video-pip-fallback">
                         <CameraOffIcon className="size-5" strokeWidth={2} />

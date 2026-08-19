@@ -60,6 +60,7 @@ export const useCallStore = create((set, get) => ({
   callerToken: null,
   connectedAt: null,
   callDurationSeconds: 0,
+  isMinimized: false,
   error: null,
 
   reset: () => {
@@ -77,8 +78,18 @@ export const useCallStore = create((set, get) => ({
       callerToken: null,
       connectedAt: null,
       callDurationSeconds: 0,
+      isMinimized: false,
       error: null,
     });
+  },
+
+  minimizeCall: () => {
+    if (!["outgoing", "incoming", "connecting", "active"].includes(get().status)) return;
+    set({ isMinimized: true });
+  },
+
+  restoreCall: () => {
+    set({ isMinimized: false });
   },
 
   startCall: async (peer, callType = "audio") => {

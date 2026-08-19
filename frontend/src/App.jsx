@@ -14,6 +14,7 @@ import { Toaster } from "react-hot-toast";
 import { setAuthTokenGetter } from "./lib/axios";
 import { AudioCallModal } from "./components/chat/AudioCallModal";
 import { VideoCallModal } from "./components/chat/VideoCallModal";
+import { MinimizedCallBar } from "./components/chat/MinimizedCallBar";
 
 function App() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
@@ -127,6 +128,7 @@ function App() {
         </Routes>
         <AudioCallModal />
         <VideoCallModal />
+        <MinimizedCallBar />
         <Toaster />
       </RgbProvider>
     </ThemeProvider>
