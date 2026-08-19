@@ -50,13 +50,13 @@ export function ProfileEditModal({ isOpen, onOpenChange: onOpenChangeProp }) {
         firstName: first,
         lastName: rest.join(" ") || null,
       });
+      let updatedAvatar = authUser?.profilePic || authUser?.profilePicture;
       if (avatarFile) {
-        await clerkUser.setProfileImage({ file: avatarFile });
+        const image = await clerkUser.setProfileImage({ file: avatarFile });
+        updatedAvatar = image.publicUrl || clerkUser.imageUrl || avatarPreview;
       }
 
       const updatedName = [first, rest.join(" ")].filter(Boolean).join(" ") || trimmedName;
-      const updatedAvatar =
-        clerkUser.imageUrl || avatarPreview || authUser?.profilePic || authUser?.profilePicture;
 
       updateAuthUser({
         fullName: updatedName,
