@@ -29,12 +29,19 @@ export async function inviteCall(req, res) {
     if (!isLivekitConfigured()) return livekitUnavailable(res);
 
     const callerId = String(req.user._id);
-    const { peerId } = req.body;
+    const { peerId, callType } = req.body;
 
     if (!peerId) {
       res.status(400).json({ message: "peerId is required" });
       return;
     }
+
+    if (callType !== undefined && callType !== "audio" && callType !== "video") {
+      res.status(400).json({ message: "callType must be 'audio' or 'video'" });
+      return;
+    }
+
+    const normalizedCallType = callType === "video" ? "video" : "audio";
 
     if (String(peerId) === callerId) {
       res.status(400).json({ message: "Cannot call yourself" });
@@ -79,6 +86,7 @@ export async function inviteCall(req, res) {
       callerId,
       calleeId: String(peerId),
       status: "ringing",
+      callType: normalizedCallType,
     };
 
     registerCall(call);
@@ -86,10 +94,11 @@ export async function inviteCall(req, res) {
     io.to(calleeSocketId).emit("call:incoming", {
       callId,
       roomName,
+      callType: call.callType,
       caller: formatCaller(caller ?? req.user),
     });
 
-    res.status(200).json({ callId, roomName, token });
+    res.status(200).json({ callId, roomName, token, callType: call.callType });
   } catch (error) {
     console.error("Error in inviteCall:", error.message);
     res.status(500).json({ message: "Internal server error" });

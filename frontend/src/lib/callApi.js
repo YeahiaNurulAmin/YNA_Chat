@@ -1,7 +1,7 @@
 import { axiosInstance } from "./axios";
 
-export async function inviteCall(peerId) {
-  const res = await axiosInstance.post("/calls/invite", { peerId });
+export async function inviteCall(peerId, callType = "audio") {
+  const res = await axiosInstance.post("/calls/invite", { peerId, callType });
   return res.data;
 }
 

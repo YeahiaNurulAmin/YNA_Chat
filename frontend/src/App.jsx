@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { setAuthTokenGetter } from "./lib/axios";
 import { AudioCallModal } from "./components/chat/AudioCallModal";
+import { VideoCallModal } from "./components/chat/VideoCallModal";
 
 function App() {
   const { isSignedIn, isLoaded, getToken } = useAuth();
@@ -125,6 +126,7 @@ function App() {
           <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
         </Routes>
         <AudioCallModal />
+        <VideoCallModal />
         <Toaster />
       </RgbProvider>
     </ThemeProvider>

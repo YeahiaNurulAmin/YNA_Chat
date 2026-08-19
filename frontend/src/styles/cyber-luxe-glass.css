@@ -1978,6 +1978,133 @@
   }
 }
 
+.cyber-video-call-overlay {
+  background:
+    radial-gradient(circle at 80% 8%, rgba(139, 92, 246, 0.16), transparent 46%),
+    radial-gradient(circle at 12% 90%, rgba(34, 211, 238, 0.1), transparent 42%),
+    var(--cl-modal-grad) !important;
+}
+
+.cyber-video-call-body {
+  align-items: stretch;
+  gap: 0.7rem;
+  padding: 0.9rem 1.5rem 0.35rem !important;
+}
+
+.cyber-video-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cyber-video-remote {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background: rgba(2, 6, 16, 0.88);
+  border: 1px solid rgba(34, 211, 238, 0.16);
+  box-shadow:
+    inset 0 0 44px -22px rgba(34, 211, 238, 0.5),
+    0 0 30px -14px rgba(139, 92, 246, 0.4);
+}
+
+.cyber-video-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+.cyber-video-remote-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2rem;
+}
+
+.cyber-video-remote-fallback .avatar-neon-ring {
+  padding: 3px;
+  box-shadow:
+    0 0 22px rgba(139, 92, 246, 0.32),
+    0 0 48px rgba(34, 211, 238, 0.12);
+}
+
+.cyber-video-fallback-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cl-on-surface-variant);
+}
+
+.cyber-video-pip {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  z-index: 3;
+  width: 9rem;
+  max-width: 38%;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: rgba(2, 6, 16, 0.9);
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  box-shadow:
+    0 8px 26px -8px rgba(0, 0, 0, 0.65),
+    0 0 18px -6px rgba(34, 211, 238, 0.45);
+}
+
+.cyber-video-pip-feed {
+  transform: scaleX(-1);
+}
+
+.cyber-video-pip-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--cl-on-surface-variant);
+}
+
+.cyber-video-call-controls {
+  flex-wrap: wrap;
+  gap: 1.25rem 1.75rem;
+}
+
+@media (max-width: 480px) {
+  .cyber-video-call-body {
+    padding: 0.6rem 1rem 0.25rem !important;
+  }
+
+  .cyber-video-pip {
+    top: 0.75rem;
+    right: 0.85rem;
+    width: 7.25rem;
+  }
+
+  .cyber-video-call-controls {
+    gap: 1rem 1.4rem;
+  }
+}
+
 .cyber-emergency-dialog {
   border-color: rgba(239, 68, 68, 0.45) !important;
   box-shadow:
