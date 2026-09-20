@@ -1,6 +1,7 @@
 /**
  * Cyber Neon design system for YNA Chat — Premium Command-Center edition.
- * Used on ChatPage, chat chrome, settings menus, call overlays, and related components.
+ * Used on ChatPage, chat chrome, message action menus, settings menus,
+ * call overlays, and related components.
  * Class names are preserved from the previous dashboard stylesheet.
  */
 
@@ -1283,6 +1284,60 @@
 
 .status-online-bloom {
   box-shadow: 0 0 8px 1px rgba(74, 222, 128, 0.55);
+}
+
+/* ── Message actions menu (Reply / Forward / Delete) ── */
+
+.msg-actions-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 9.75rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--cl-border-violet);
+  background: var(--cl-menu-grad);
+  box-shadow:
+    var(--cl-shadow-deep),
+    0 0 0 1px rgba(139, 92, 246, 0.12),
+    0 0 28px -12px rgba(139, 92, 246, 0.5);
+  padding: 0.3rem;
+}
+
+.msg-actions-menu__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--cl-on-surface);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.msg-actions-menu__item:hover {
+  background: var(--cl-tint-violet);
+  color: var(--cl-glow-violet);
+}
+
+.msg-actions-menu__item:focus-visible {
+  outline: none;
+  background: var(--cl-tint-violet);
+  box-shadow: inset 0 0 0 1px var(--cl-border-violet);
+}
+
+.msg-actions-menu__item--danger {
+  color: var(--cl-status-alert);
+}
+
+.msg-actions-menu__item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--cl-status-alert);
 }
 
 /* ── Settings control panel ── */
