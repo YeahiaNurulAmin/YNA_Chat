@@ -3,7 +3,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { Navigate, Route, Routes } from "react-router";
 import ChatPage from "./pages/ChatPage";
 import AuthPage from "./pages/AuthPage";
-import { AuthenticateWithRedirectCallback, useAuth } from "@clerk/react";
+import SsoCallbackPage from "./pages/SsoCallbackPage";
+import { useAuth } from "@clerk/react";
 import PageLoader from "./components/PageLoader";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
@@ -124,7 +125,7 @@ function App() {
             path="/auth"
             element={!isSignedIn ? <AuthPage /> : <Navigate to={"/"} replace />}
           />
-          <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
+          <Route path="/sso-callback" element={<SsoCallbackPage />} />
         </Routes>
         <AudioCallModal />
         <VideoCallModal />

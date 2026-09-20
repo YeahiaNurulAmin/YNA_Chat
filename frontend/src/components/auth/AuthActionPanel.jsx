@@ -298,7 +298,7 @@ export function AuthActionPanel() {
                 placeholder="neon@yna.io"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className={`${fieldClassName} pl-9`}
+                className={`${fieldClassName} auth-field-has-leading-icon`}
                 required
               />
             </div>
@@ -309,6 +309,10 @@ export function AuthActionPanel() {
               Password
             </label>
             <div className="relative">
+              <KeyRoundIcon
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--cl-outline)]"
+                aria-hidden
+              />
               <input
                 id="auth-password"
                 type={showPassword ? "text" : "password"}
@@ -316,7 +320,7 @@ export function AuthActionPanel() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className={`${fieldClassName} pr-10`}
+                className={`${fieldClassName} auth-field-has-leading-icon auth-field-has-trailing-icon`}
                 minLength={8}
                 required
               />
@@ -349,6 +353,10 @@ export function AuthActionPanel() {
           </button>
         </form>
       )}
+
+      {/* Clerk injects its bot-protection widget into this element when a sign-up
+          (email/password or OAuth) needs a captcha token; it stays empty otherwise. */}
+      <div id="clerk-captcha" />
 
       <div className="auth-clerk-footer">
         <div className="auth-toggle-row">

@@ -314,6 +314,11 @@ PORT=3000
 MONGODB_URI=mongodb://127.0.0.1:27017/yna_chat
 FRONTEND_URL=http://localhost:5173
 
+# Outbound Proxy (only needed on restricted networks — leave blank otherwise)
+PROXY_URL=http://127.0.0.1:8080
+NO_PROXY=localhost,127.0.0.1,::1
+MONGODB_PROXY_PORT=10808
+
 # Clerk Authentication
 CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
@@ -348,6 +353,9 @@ NODE_ENV=development
 | `LIVEKIT_API_KEY` | Yes (calls) | LiveKit API Key for minting room tokens |
 | `LIVEKIT_API_SECRET` | Yes (calls) | LiveKit API Secret for signature verification |
 | `FRONTEND_URL` | Dev | CORS allowed origin for dev server |
+| `PROXY_URL` | No | Outbound proxy (`http://`, `https://` or `socks5://`) — see [Running Behind a Proxy](#running-behind-a-proxy) |
+| `NO_PROXY` | No | Comma-separated hosts that bypass the proxy (defaults to `localhost,127.0.0.1,::1`) |
+| `MONGODB_PROXY_PORT` | No | Loopback port for the SOCKS5 bridge (default `10808`, auto-falls back to a free port) |
 
 ### Frontend (`frontend/.env`)
 
@@ -409,6 +417,89 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` in your browser. Verify backend health at `http://localhost:3000/health`.
+
+---
+
+## Running Behind a Proxy
+
+On networks where direct internet access is blocked (restricted Wi-Fi, ISP or corporate
+proxies, and similar), every outbound integration has to go through the proxy. YNA Chat
+handles this centrally in [`backend/src/lib/proxy.js`](backend/src/lib/proxy.js).
+
+### Configure
+
+Add one variable to `backend/.env`:
+
+```env
+PROXY_URL=http://127.0.0.1:8080      # http://, https:// or socks5://
+NO_PROXY=localhost,127.0.0.1,::1     # optional — this is the default
+```
+
+`HTTP_PROXY` / `HTTPS_PROXY` are also honoured when `PROXY_URL` is unset, so a machine that
+already exports them needs no extra configuration. **When no proxy is configured, the app
+behaves exactly as it did before** — URIs are untouched and no bridge is started.
+
+### What gets proxied
+
+| Outbound client | How it is proxied |
+|-----------------|-------------------|
+| Clerk, ImageKit, LiveKit, Nominatim, cron health ping (all `fetch()`-based) | `installFetchProxy()` installs an undici proxy dispatcher on the global dispatcher that Node's built-in `fetch` uses, so every SDK is covered without per-client config. `NO_PROXY` is respected. Requires no CLI flag and works on any supported Node version. |
+| MongoDB (raw TCP/TLS) | The driver ignores proxy env vars and only speaks SOCKS5, so it is tunnelled separately — see below. |
+| Browser → Clerk / LiveKit / map tiles | Nothing to configure: the browser uses the operating system's proxy settings. |
+
+### MongoDB specifics
+
+The MongoDB driver cannot talk to an HTTP proxy, so:
+
+- `PROXY_URL=socks5://…` — handed straight to the driver via `proxyHost` / `proxyPort`.
+- `PROXY_URL=http://…` (the common case) — a **loopback-only SOCKS5 server** is started and
+  every driver connection is tunnelled to the upstream proxy with HTTP `CONNECT`. The port
+  defaults to `10808` and automatically falls back to a free port if it is already taken.
+- `mongodb+srv://` requires an SRV/TXT DNS lookup, which Node's c-ares resolver often cannot
+  answer on these networks (it fails with `ECONNREFUSED`, or hangs if a public resolver is
+  forced). When a proxy is configured, the `mongodb+srv://` URI is expanded into an
+  equivalent seedlist URI over **DNS-over-HTTPS** through the same proxy, carrying over
+  `authSource`, `replicaSet` and `tls=true`.
+
+Because SRV resolution is handled over DoH, do **not** hard-code `dns.setServers([...])` for
+Atlas; that is what breaks name resolution on proxied networks. Use `MONGODB_DNS_SERVERS`
+only if the platform genuinely needs a specific resolver.
+
+### Verify connectivity
+
+A built-in diagnostic checks every outbound integration and exits non-zero on failure:
+
+```bash
+cd backend
+npm run check:connections
+```
+
+```
+============ FETCH-BASED SERVICES ============
+PASS  Clerk API — HTTP 200
+PASS  ImageKit API — HTTP 404
+PASS  LiveKit Cloud — HTTP 200
+PASS  DNS-over-HTTPS — HTTP 200
+PASS  OpenStreetMap tiles — HTTP 200
+============ SDK CLIENTS ============
+PASS  LiveKit SDK listRooms() — 0 active room(s)
+PASS  Clerk SDK users.getUserList() — 3 user(s)
+============ MONGODB ============
+PASS  MongoDB ping — ok=1
+PASS  MongoDB listCollections() — livelocationsessions, users, messages
+PASS  MongoDB users.countDocuments() — 23 document(s)
+============ SUMMARY ============
+10/10 checks passed
+```
+
+Set `CONNECTIVITY_TIMEOUT_MS` to shorten or extend the per-check timeout (default `25000`).
+
+### Frontend note
+
+The SPA talks to the API on `http://localhost:3000`, so make sure loopback is **excluded**
+from the proxy (`NO_PROXY` on the backend, and Windows `ProxyOverride`/`<local>` for the
+browser). Otherwise the browser routes localhost through the proxy and the UI cannot reach
+the API.
 
 ---
 
