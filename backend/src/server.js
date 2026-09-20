@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
+import { installFetchProxy } from "./lib/proxy.js";
 import { startCronJobs } from "./lib/cron.js";
 import { clerkMiddleware } from '@clerk/express'
 import fs from "fs";
@@ -12,6 +13,10 @@ import messageRoute from "./routes/messageRoute.js";
 import locationRoute from "./routes/locationRoute.js";
 import callRoute from "./routes/callRoute.js";
 import { app, server, } from "./lib/socket.js";
+
+// Route fetch-based integrations (Clerk, ImageKit, LiveKit, Nominatim) and the
+// keep-alive cron through the outbound proxy when one is configured.
+installFetchProxy();
 
 
 // Initialize Express app
